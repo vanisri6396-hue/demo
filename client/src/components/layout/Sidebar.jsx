@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, UserSquare, Calendar, BarChart3, 
   Settings, LogOut, FileText, Activity, BookOpen, Clock, 
-  QrCode, ClipboardList, ShieldAlert, FileSpreadsheet
+  QrCode, ClipboardList, ShieldAlert, FileSpreadsheet, CheckCircle2
 } from 'lucide-react';
 
 const navConfig = {

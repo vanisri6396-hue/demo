@@ -9,11 +9,20 @@ exports.register = async (req, res) => {
     const {
       name, email, password, role,
       rollNo, employeeId,
-      department, section, year, semester, phone
+      department, section, year, semester, phone,
+      verificationKey
     } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email and password are required ❌" });
+    }
+
+    // Security: Check for faculty verification key if role is not student
+    if (role !== "student") {
+      const serverKey = process.env.FACULTY_SECRET_KEY || "UNIVERSITY_STAFF_2024";
+      if (verificationKey !== serverKey) {
+        return res.status(403).json({ message: "Invalid Faculty Verification Key! ❌" });
+      }
     }
 
     const exists = await User.findOne({ email: email.toLowerCase() });
