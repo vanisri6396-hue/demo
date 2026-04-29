@@ -42,11 +42,16 @@ export default function Signup() {
       <div className="w-full max-w-[600px]">
         {/* Header */}
         <div className="flex flex-col items-center mb-10 text-center">
-          <div className="w-16 h-16 bg-primary-600 rounded-2xl -rotate-6 flex items-center justify-center shadow-glow mb-4">
-            <UserPlus className="text-white rotate-6" size={32} />
+          <div className="w-20 h-20 mb-6 relative group">
+            <div className="absolute inset-0 bg-primary-600/10 rounded-full blur-xl group-hover:bg-primary-600/20 transition-all"></div>
+            <img 
+              src="/logo.png" 
+              alt="Takshashila University Logo" 
+              className="w-full h-full object-contain relative z-10 drop-shadow-xl" 
+            />
           </div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Create Account</h1>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">Join the Takshashila Network</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Join the Takshashila University Network</p>
         </div>
 
         {/* Signup Card */}
