@@ -26,6 +26,7 @@ import FacultyManager from "./pages/hod/FacultyManager";
 import HODStatistics from "./pages/hod/HODStatistics";
 import AuditLogs from "./pages/hod/AuditLogs";
 import InchargeDashboard from "./pages/teacher/InchargeDashboard";
+import TeacherTimetable from "./pages/teacher/TeacherTimetable";
 
 // A simple protected route wrapper (can be expanded later with real auth checks)
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -93,16 +94,17 @@ export default function App() {
           <Route index element={<StudentDashboard />} />
         </Route>
 
-        {/* HOD/Authority Routes */}
+        {/* HOD Routes */}
         <Route path="/hod" element={
           <ProtectedRoute allowedRole="authority">
-            <DashboardLayout role="authority" title="Departmental Intelligence" subtitle="HOD Portal" />
+            <DashboardLayout role="authority" title="Department Administration" subtitle="Head of Department" />
           </ProtectedRoute>
         }>
           <Route path="approvals" element={<ApprovalDashboard />} />
           <Route path="sections" element={<SectionIntelligence />} />
           <Route path="faculty" element={<FacultyManager />} />
           <Route path="statistics" element={<HODStatistics />} />
+          <Route path="timetable" element={<TimetableManager />} />
           <Route path="audit" element={<AuditLogs />} />
           <Route path="events" element={<EventManager />} />
           <Route path="reports" element={<MonthlyReport />} />
