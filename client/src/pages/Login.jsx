@@ -42,12 +42,20 @@ export default function Login() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 bg-[radial-gradient(#f9731610_1px,transparent_1px)] [background-size:20px_20px]">
       <div className="w-full max-w-[450px]">
         {/* Logo/Brand */}
-        <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 bg-primary-600 rounded-2xl rotate-12 flex items-center justify-center shadow-glow mb-4">
-            <LogIn className="text-white -rotate-12" size={32} />
+        <div className="flex flex-col items-center mb-10 text-center">
+          <div className="w-24 h-24 mb-6 relative group">
+            <div className="absolute inset-0 bg-primary-600/20 rounded-full blur-2xl group-hover:bg-primary-600/30 transition-all"></div>
+            <img 
+              src="/logo.png" 
+              alt="Takshashila University Logo" 
+              className="w-full h-full object-contain relative z-10 drop-shadow-2xl animate-in zoom-in-50 duration-700" 
+            />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">TAKSHASHILA</h1>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">Smart Attendance v2.0</p>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tighter leading-none mb-1">
+            TAKSHASHILA <br />
+            <span className="text-primary-600">UNIVERSITY</span>
+          </h1>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-3">Smart Attendance System</p>
         </div>
 
         {/* Login Card */}
