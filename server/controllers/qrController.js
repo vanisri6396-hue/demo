@@ -1,88 +1,230 @@
-const Student = require("../models/Student");
-const Attendance = require("../models/Attendance");
-const QRSession = require("../models/QRSession");
 const crypto = require("crypto");
+const QRSession = require("../models/QRSession");
+const Attendance = require("../models/Attendance");
+const User = require("../models/User");
+const Subject = require("../models/Subject");
+const Class = require("../models/Class");
 
-// ✅ QR generator
+// Per-teacher interval map (prevents multiple timers)
+const qrIntervals = {};
+
+/* ─── Helpers ────────────────────────────────────────────────────────── */
 function generateQR() {
-  return crypto.randomBytes(8).toString("hex");
+  return crypto.randomBytes(12).toString("hex");
 }
 
-// 🔁 store interval globally
-let qrInterval;
+function randomInterval(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
+// Schedule next QR rotation (3–4 seconds, random)
+function scheduleNextRotation(teacherId, sessionId) {
+  const delay = randomInterval(3000, 4000);
+
+  qrIntervals[teacherId] = setTimeout(async () => {
+    try {
+      const session = await QRSession.findById(sessionId);
+      if (!session || !session.isActive) return;
+
+      const newQR = generateQR();
+      session.currentQR = newQR;
+      await session.save();
+
+      global.io.emit("qr-update", { qr: newQR, sessionId });
+      console.log(`🔄 QR rotated for teacher ${teacherId}: ${newQR}`);
+
+      // Schedule next rotation
+      scheduleNextRotation(teacherId, sessionId);
+    } catch (err) {
+      console.error("QR rotation error:", err);
+    }
+  }, delay);
+}
+
+/* ─── START QR SESSION ───────────────────────────────────────────────── */
 exports.startQR = async (req, res) => {
   try {
-    const { lat, lng, radius } = req.body;
+    const { lat, lng, radius, classId, subjectId, type } = req.body;
+    const teacherId = req.user.id;
 
-    // 🌍 store teacher location
-    global.teacherLat = lat;
-    global.teacherLng = lng;
-    global.radius = radius;
+    if (!lat || !lng) {
+      return res.status(400).json({ message: "Teacher location required ❌" });
+    }
 
-    // 🔄 reset present list
-    global.presentStudents = [];
+    // Clear any existing timer for this teacher
+    if (qrIntervals[teacherId]) {
+      clearTimeout(qrIntervals[teacherId]);
+      delete qrIntervals[teacherId];
+    }
 
-    // 🧹 clear old interval (IMPORTANT)
-    if (qrInterval) clearInterval(qrInterval);
+    // Deactivate any previous active session for this teacher
+    await QRSession.updateMany(
+      { teacherId, isActive: true },
+      { isActive: false }
+    );
 
-    // 🔥 generate first QR
-    let newQR = generateQR();
-    global.currentQR = newQR;
+    const firstQR  = generateQR();
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
-    // 📡 send first QR
-    global.io.emit("qr-update", newQR);
+    const session = await QRSession.create({
+      teacherId,
+      classId:    classId   || null,
+      subjectId:  subjectId || null,
+      currentQR:  firstQR,
+      expiresAt,
+      teacherLat: lat,
+      teacherLng: lng,
+      radius:     radius || 50,
+      type:       type   || "regular",
+      isActive:   true,
+      presentStudents: []
+    });
 
-    console.log("QR started:", newQR);
-await QRSession.create({
-  teacherId: req.user.id,
-  qr: newQR,
-  lat,
-  lng,
-  radius,
-  startTime: new Date()
-});
-    // 🔄 update QR every 5 seconds
-    qrInterval = setInterval(() => {
-      newQR = generateQR();
-      global.currentQR = newQR;
+    // Store session info globally for fast access during scan
+    global.activeSessions = global.activeSessions || {};
+    global.activeSessions[session._id.toString()] = {
+      teacherLat: lat,
+      teacherLng: lng,
+      radius: radius || 50,
+      currentQR: firstQR
+    };
 
-      global.io.emit("qr-update", newQR);
-      console.log("QR updated:", newQR);
-    }, 5000);
+    // Emit first QR
+    global.io.emit("qr-update", { qr: firstQR, sessionId: session._id });
+    console.log(`✅ QR session started. First QR: ${firstQR}`);
 
-    /* =========================
-       🔥 AUTO ABSENT TIMER
-    ========================= */
+    // Increment subject totalClasses
+    if (subjectId) {
+      await Subject.findByIdAndUpdate(subjectId, { $inc: { totalClasses: 1 } });
+    }
+
+    // Start rotating QR
+    scheduleNextRotation(teacherId, session._id);
+
+    // ── Auto-absent timer (2 minutes) ──────────────────────────────────
     setTimeout(async () => {
       try {
-        const allStudents = await Student.find();
+        clearTimeout(qrIntervals[teacherId]);
+        delete qrIntervals[teacherId];
+
+        // Mark session inactive
+        await QRSession.findByIdAndUpdate(session._id, { isActive: false });
+
+        const freshSession = await QRSession.findById(session._id);
+
+        // Find all class students
+        let allStudents = [];
+        if (classId) {
+          const cls = await Class.findById(classId).populate("students");
+          allStudents = cls ? cls.students : [];
+        } else {
+          allStudents = await User.find({ role: "student" });
+        }
+
+        const today = new Date().toISOString().split("T")[0];
+        const presentIds = (freshSession.presentStudents || []).map((id) =>
+          id.toString()
+        );
 
         const absentStudents = allStudents.filter(
-          (student) =>
-            !global.presentStudents.find(
-              (p) => p._id.toString() === student._id.toString()
-            )
+          (s) => !presentIds.includes(s._id.toString())
         );
 
-        console.log(
-          "Absent:",
-          absentStudents.map((s) => s.name)
-        );
+        // Save absent records to DB
+        const absentDocs = absentStudents.map((s) => ({
+          studentId:  s._id,
+          sessionId:  session._id,
+          subjectId:  subjectId || null,
+          classId:    classId   || null,
+          name:       s.name,
+          rollNo:     s.rollNo,
+          className:  s.section || "",
+          date:       today,
+          status:     "absent",
+          type:       type || "regular"
+        }));
 
-        // 📡 send final result to teacher
+        if (absentDocs.length > 0) {
+          await Attendance.insertMany(absentDocs, { ordered: false }).catch(() => {});
+        }
+
+        // Emit final result
         global.io.emit("attendance-final", {
-          present: global.presentStudents,
-          absent: absentStudents,
+          sessionId:      session._id,
+          present:        freshSession.presentStudents,
+          absent:         absentStudents,
+          presentCount:   presentIds.length,
+          absentCount:    absentStudents.length
         });
-      } catch (err) {
-        console.error("Absent error:", err);
-      }
-    }, 120000); // ⏱ 2 minutes
 
-    res.json({ message: "QR started" });
+        console.log(`⏱ Session ${session._id} ended. Absent: ${absentStudents.length}`);
+
+        // Clean up global cache
+        if (global.activeSessions) {
+          delete global.activeSessions[session._id.toString()];
+        }
+
+      } catch (err) {
+        console.error("Auto-absent timer error:", err);
+      }
+    }, 2 * 60 * 1000); // 2 minutes
+
+    res.json({
+      message:   "QR session started ✅",
+      sessionId: session._id,
+      expiresAt
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error starting QR" });
+    console.error("startQR error:", err);
+    res.status(500).json({ message: "Failed to start QR session ❌" });
+  }
+};
+
+/* ─── STOP QR SESSION (manual) ───────────────────────────────────────── */
+exports.stopQR = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    const teacherId = req.user.id;
+
+    if (qrIntervals[teacherId]) {
+      clearTimeout(qrIntervals[teacherId]);
+      delete qrIntervals[teacherId];
+    }
+
+    await QRSession.findByIdAndUpdate(sessionId, { isActive: false });
+
+    if (global.activeSessions && global.activeSessions[sessionId]) {
+      delete global.activeSessions[sessionId];
+    }
+
+    global.io.emit("session-stopped", { sessionId });
+
+    res.json({ message: "Session stopped ✅" });
+  } catch (err) {
+    console.error("stopQR error:", err);
+    res.status(500).json({ message: "Failed to stop session ❌" });
+  }
+};
+
+/* ─── GET SESSION HISTORY ─────────────────────────────────────────────── */
+exports.getSessionHistory = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const { limit = 20, page = 1 } = req.query;
+
+    const sessions = await QRSession.find({ teacherId })
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit))
+      .populate("classId", "name section department")
+      .populate("subjectId", "name code");
+
+    const total = await QRSession.countDocuments({ teacherId });
+
+    res.json({ sessions, total, page: Number(page), limit: Number(limit) });
+  } catch (err) {
+    console.error("getSessionHistory error:", err);
+    res.status(500).json({ message: "Failed to fetch session history ❌" });
   }
 };
