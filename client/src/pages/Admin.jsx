@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-
+import { BASE_URL } from "../config";
 export default function Admin() {
   const [data, setData] = useState(null);
 
@@ -8,7 +8,7 @@ export default function Admin() {
     const fetchData = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/admin/dashboard",
+          `${BASE_URL}/api/admin/dashboard`,
           {
             headers: {
               Authorization: "Bearer " + localStorage.getItem("token")

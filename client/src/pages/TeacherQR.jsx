@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import io from "socket.io-client";
 import { QRCodeCanvas } from "qrcode.react";
-
+import { BASE_URL } from "../config";
 // 🔌 socket connection
-const socket = io("http://localhost:5000");
+const socket = io(BASE_URL);
 
 export default function TeacherQR() {
   const [qr, setQR] = useState("");
@@ -28,18 +28,18 @@ export default function TeacherQR() {
           const lng = position.coords.longitude;
 
           await axios.post(
-            "http://localhost:5000/api/qr/start",
-            {
-              lat,
-              lng,
-              radius: 50
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${token}` // 🔥 IMPORTANT
-              }
-            }
-          );
+  `${BASE_URL}/api/qr/start`,
+  {
+    lat,
+    lng,
+    radius: 50
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+);
 
           setStatus("Attendance Started ✅");
           setStudents([]);
