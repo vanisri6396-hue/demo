@@ -17,6 +17,7 @@ const navConfig = {
     { title: 'Overview', path: '/hod', icon: LayoutDashboard },
     { title: 'Sections', path: '/hod/sections', icon: Users },
     { title: 'Faculty', path: '/hod/faculty', icon: UserSquare },
+    { title: 'Timetable', path: '/hod/timetable', icon: Calendar },
     { title: 'Statistics', path: '/hod/statistics', icon: BarChart3 },
     { title: 'Monthly Reports', path: '/hod/reports', icon: FileSpreadsheet },
     { title: 'Audit Logs', path: '/hod/audit', icon: Activity },
@@ -30,7 +31,7 @@ const navConfig = {
   ],
   teacher: [
     { title: 'Dashboard', path: '/teacher', icon: LayoutDashboard },
-    { title: 'Timetable', path: '/teacher/timetable', icon: Calendar },
+    { title: 'Weekly Schedule', path: '/teacher/timetable', icon: Calendar },
     { title: 'Attendance Logs', path: '/teacher/logs', icon: BookOpen },
     { title: 'Permissions', path: '/teacher/permissions', icon: ShieldAlert },
   ],
