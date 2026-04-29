@@ -25,6 +25,7 @@ import SectionIntelligence from "./pages/hod/SectionIntelligence";
 import FacultyManager from "./pages/hod/FacultyManager";
 import HODStatistics from "./pages/hod/HODStatistics";
 import AuditLogs from "./pages/hod/AuditLogs";
+import InchargeDashboard from "./pages/teacher/InchargeDashboard";
 
 // A simple protected route wrapper (can be expanded later with real auth checks)
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -107,6 +108,17 @@ export default function App() {
           <Route path="reports" element={<MonthlyReport />} />
           <Route path="settings" element={<Settings />} />
           <Route index element={<ApprovalDashboard />} />
+        </Route>
+
+        {/* Class Incharge Routes */}
+        <Route path="/incharge" element={
+          <ProtectedRoute allowedRole="classIncharge">
+            <DashboardLayout role="classIncharge" title="Academic Supervision" subtitle="Class Incharge" />
+          </ProtectedRoute>
+        }>
+          <Route index element={<InchargeDashboard />} />
+          <Route path="verify" element={<InchargeDashboard />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         <Route path="/invigilator" element={

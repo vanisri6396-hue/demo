@@ -34,6 +34,11 @@ const navConfig = {
     { title: 'Attendance Logs', path: '/teacher/logs', icon: BookOpen },
     { title: 'Permissions', path: '/teacher/permissions', icon: ShieldAlert },
   ],
+  classIncharge: [
+    { title: 'Dashboard', path: '/incharge', icon: LayoutDashboard },
+    { title: 'Verify Requests', path: '/incharge/verify', icon: CheckCircle2 },
+    { title: 'Attendance Stats', path: '/incharge/stats', icon: BarChart3 },
+  ],
   invigilator: [
     { title: 'Dashboard', path: '/invigilator', icon: LayoutDashboard },
     { title: 'Exam Schedule', path: '/invigilator/schedule', icon: Calendar },
