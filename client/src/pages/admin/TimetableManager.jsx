@@ -1,137 +1,163 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BASE_URL } from '../../config';
-import { Save, Plus, Trash2, Calendar, User, BookOpen, Clock } from 'lucide-react';
+import { 
+  Calendar, 
+  Save, 
+  Clock, 
+  Edit3, 
+  Trash2, 
+  Plus,
+  ArrowLeft,
+  Loader2,
+  CheckCircle2
+} from 'lucide-react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const HOURS = [1, 2, 3, 4, 5, 6, 7, 8];
-const TIMES = [
-  '09:30 - 10:20', '10:20 - 11:10', '11:20 - 12:10', '12:10 - 01:00',
-  '01:50 - 02:30', '02:30 - 03:10', '03:20 - 04:00', '04:00 - 04:40'
-];
+const HOURS = [1, 2, 3, 4, 5, 6];
 
 export default function TimetableManager() {
   const [section, setSection] = useState('CSE-A');
-  const [timetable, setTimetable] = useState({});
+  const [timetableData, setTimetableData] = useState({});
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchTimetable();
-  }, [section]);
+  const [saving, setSaving] = useState(false);
+  const [editingSlot, setEditingSlot] = useState(null);
 
   const fetchTimetable = async () => {
+    setLoading(true);
     try {
       const res = await axios.get(`${BASE_URL}/api/timetable/section/${section}`);
       const mapped = {};
-      res.data.forEach(dayData => {
-        mapped[dayData.day] = dayData.slots;
+      res.data.forEach(dayDoc => {
+        mapped[dayDoc.day] = dayDoc.slots;
       });
-      setTimetable(mapped);
+      setTimetableData(mapped);
     } catch (err) {
       console.error(err);
-    }
-  };
-
-  const handleCellChange = (day, hour, field, value) => {
-    const currentSlots = timetable[day] || [];
-    const slotIndex = currentSlots.findIndex(s => s.hour === hour);
-    
-    const newSlots = [...currentSlots];
-    if (slotIndex > -1) {
-      newSlots[slotIndex] = { ...newSlots[slotIndex], [field]: value };
-    } else {
-      newSlots.push({ hour, [field]: value, timeSlot: TIMES[hour-1] });
-    }
-    
-    setTimetable({ ...timetable, [day]: newSlots });
-  };
-
-  const saveTimetable = async () => {
-    setLoading(true);
-    try {
-      for (const day of DAYS) {
-        if (timetable[day]) {
-          await axios.post(`${BASE_URL}/api/timetable/update`, {
-            day,
-            section,
-            slots: timetable[day]
-          });
-        }
-      }
-      alert('Timetable saved successfully! 🚀');
-    } catch (err) {
-      alert('Failed to save timetable');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchTimetable();
+  }, [section]);
+
+  const handleUpdateSlot = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const newSlot = {
+      hour: editingSlot.hour,
+      subjectName: formData.get('subject'),
+      teacherName: formData.get('teacher'),
+      room: formData.get('room'),
+      timeSlot: editingSlot.timeSlot || '09:30 - 10:20'
+    };
+
+    const daySlots = [...(timetableData[editingSlot.day] || [])];
+    const index = daySlots.findIndex(s => s.hour === editingSlot.hour);
+    if (index > -1) daySlots[index] = newSlot;
+    else daySlots.push(newSlot);
+
+    setTimetableData({...timetableData, [editingSlot.day]: daySlots});
+    setEditingSlot(null);
+  };
+
+  const saveToBackend = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      // Save each day's configuration
+      for (const day of DAYS) {
+        if (timetableData[day]) {
+          await axios.post(`${BASE_URL}/api/timetable/update`, {
+            section,
+            day,
+            slots: timetableData[day]
+          }, { headers: { Authorization: `Bearer ${token}` }});
+        }
+      }
+      alert('Timetable saved successfully! ✅');
+    } catch (err) {
+      alert('Failed to save timetable ❌');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
-      <div className="flex justify-between items-center mb-10">
+    <div className="max-w-[1400px] mx-auto pb-20 px-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-12">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">University Timetable Editor</h1>
-          <p className="text-gray-500 font-medium">Manage faculty assignments and subject schedules per section.</p>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-4">
+            <Calendar size={40} className="text-primary-600" />
+            Master Timetable
+          </h1>
+          <p className="text-gray-500 font-medium mt-1">Configure section-wise weekly schedule (Max 6 hours/day).</p>
         </div>
-        
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 w-full lg:w-auto">
           <select 
-            className="bg-white border border-gray-200 px-4 py-2.5 rounded-xl font-bold text-gray-700 shadow-sm outline-none focus:border-primary-500"
-            value={section}
+            value={section} 
             onChange={(e) => setSection(e.target.value)}
+            className="px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl font-black text-gray-700 outline-none focus:border-primary-400"
           >
-            <option value="CSE-A">CSE (AIML-A)</option>
-            <option value="CSE-B">CSE (AIML-B)</option>
-            <option value="CSE-C">CSE (AIML-C)</option>
+            <option value="CSE-A">CSE-A</option>
+            <option value="CSE-B">CSE-B</option>
+            <option value="ECE-A">ECE-A</option>
           </select>
-          
           <button 
-            onClick={saveTimetable}
-            disabled={loading}
-            className="btn-primary flex items-center gap-2"
+            onClick={saveToBackend}
+            disabled={saving}
+            className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-black transition-all shadow-xl"
           >
-            <Save size={18} /> {loading ? 'Saving...' : 'Save All Changes'}
+            {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />} Save Changes
           </button>
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-3xl border border-gray-100 shadow-2xl bg-white">
-        <table className="w-full border-collapse">
+      <div className="overflow-x-auto">
+        <table className="w-full border-separate border-spacing-2">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="p-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-r border-gray-100 w-40">Day / Hour</th>
-              {HOURS.map(h => (
-                <th key={h} className="p-6 text-center border-r border-gray-100">
-                  <span className="block text-primary-600 font-black text-lg">H-{h}</span>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{TIMES[h-1]}</span>
-                </th>
+            <tr>
+              <th className="p-4 bg-gray-50 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Time / Day</th>
+              {DAYS.map(day => (
+                <th key={day} className="p-4 bg-gray-50 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest">{day}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {DAYS.map(day => (
-              <tr key={day} className="border-b border-gray-50 last:border-0">
-                <td className="p-6 bg-gray-50/50 border-r border-gray-100 font-black text-gray-900 uppercase tracking-tighter text-sm">
-                  {day}
+            {HOURS.map(hour => (
+              <tr key={hour}>
+                <td className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm min-w-[120px]">
+                  <p className="text-[10px] font-black text-primary-600 uppercase mb-1">Hour {hour}</p>
+                  <p className="text-sm font-bold text-gray-400 flex items-center gap-2"><Clock size={12}/> 09:30 - 10:20</p>
                 </td>
-                {HOURS.map(hour => {
-                  const slot = (timetable[day] || []).find(s => s.hour === hour) || {};
+                {DAYS.map(day => {
+                  const slot = timetableData[day]?.find(s => s.hour === hour);
                   return (
-                    <td key={hour} className="p-4 border-r border-gray-100 hover:bg-primary-50/30 transition-colors group">
-                      <div className="flex flex-col gap-2">
-                        <input 
-                          placeholder="Subject"
-                          className="w-full text-xs font-bold text-gray-900 bg-transparent border-b border-transparent group-hover:border-primary-200 outline-none placeholder:text-gray-300 uppercase"
-                          value={slot.subjectCode || ''}
-                          onChange={(e) => handleCellChange(day, hour, 'subjectCode', e.target.value)}
-                        />
-                        <input 
-                          placeholder="Faculty Name"
-                          className="w-full text-[10px] font-medium text-gray-500 bg-transparent outline-none placeholder:text-gray-300"
-                          value={slot.teacherName || ''}
-                          onChange={(e) => handleCellChange(day, hour, 'teacherName', e.target.value)}
-                        />
-                      </div>
+                    <td 
+                      key={`${day}-${hour}`}
+                      onClick={() => setEditingSlot({day, hour, ...slot})}
+                      className={`p-4 rounded-2xl border-2 transition-all cursor-pointer min-w-[180px] h-[120px] relative group ${
+                        slot ? 'bg-white border-primary-50 shadow-md hover:border-primary-300' : 'bg-gray-50/50 border-dashed border-gray-200 hover:bg-white hover:border-primary-100'
+                      }`}
+                    >
+                      {slot ? (
+                        <div className="flex flex-col h-full justify-between">
+                          <div>
+                            <h4 className="font-black text-gray-900 leading-tight">{slot.subjectName}</h4>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mt-1">{slot.teacherName}</p>
+                          </div>
+                          <div className="flex justify-between items-center mt-auto pt-2">
+                            <span className="text-[10px] font-black bg-gray-100 px-2 py-1 rounded text-gray-500 uppercase">{slot.room}</span>
+                            <Edit3 size={14} className="text-gray-300 group-hover:text-primary-400 transition-colors" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <Plus size={20} className="text-gray-200 group-hover:text-primary-200" />
+                        </div>
+                      )}
                     </td>
                   );
                 })}
@@ -141,32 +167,73 @@ export default function TimetableManager() {
         </table>
       </div>
 
-      <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card p-6 bg-blue-50/50 border-blue-100">
-          <div className="flex items-center gap-3 mb-4 text-blue-600">
-            <BookOpen size={20} /> <span className="font-black uppercase tracking-widest text-xs">Course Reference</span>
+      {/* Edit Slot Modal */}
+      {editingSlot && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl p-8 max-w-[450px] w-full shadow-2xl scale-in-center">
+            <h2 className="text-2xl font-black text-gray-900 mb-2">Edit Schedule Slot</h2>
+            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-8">{editingSlot.day} • Hour {editingSlot.hour}</p>
+            
+            <form onSubmit={handleUpdateSlot} className="space-y-6">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Subject Name</label>
+                <input 
+                  name="subject"
+                  defaultValue={editingSlot.subjectName}
+                  className="w-full px-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary-400 font-medium text-gray-700"
+                  placeholder="e.g. Data Structures"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Assigned Teacher</label>
+                <input 
+                  name="teacher"
+                  defaultValue={editingSlot.teacherName}
+                  className="w-full px-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary-400 font-medium text-gray-700"
+                  placeholder="Prof. Name"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Room No.</label>
+                  <input 
+                    name="room"
+                    defaultValue={editingSlot.room}
+                    className="w-full px-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary-400 font-medium text-gray-700"
+                    placeholder="e.g. 402"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Hour</label>
+                  <input 
+                    disabled
+                    value={editingSlot.hour}
+                    className="w-full px-4 py-4 bg-gray-100 border border-gray-100 rounded-2xl font-black text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setEditingSlot(null)}
+                  className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-[2] py-4 bg-primary-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary-100 hover:bg-primary-700 transition-all"
+                >
+                  Update Slot
+                </button>
+              </div>
+            </form>
           </div>
-          <p className="text-xs text-blue-700 leading-relaxed font-medium">
-            Use official course codes (e.g., U24CET473) for accurate tracking and report generation across departments.
-          </p>
         </div>
-        <div className="glass-card p-6 bg-amber-50/50 border-amber-100">
-          <div className="flex items-center gap-3 mb-4 text-amber-600">
-            <User size={20} /> <span className="font-black uppercase tracking-widest text-xs">Faculty Assignment</span>
-          </div>
-          <p className="text-xs text-amber-700 leading-relaxed font-medium">
-            Ensure teacher names match their registration profiles to enable their personal timetable dashboards.
-          </p>
-        </div>
-        <div className="glass-card p-6 bg-primary-50/50 border-primary-100">
-          <div className="flex items-center gap-3 mb-4 text-primary-600">
-            <Clock size={20} /> <span className="font-black uppercase tracking-widest text-xs">Auto-Sync</span>
-          </div>
-          <p className="text-xs text-primary-700 leading-relaxed font-medium">
-            Changes saved here reflect instantly on student and teacher portals. Previous sessions remain unaffected.
-          </p>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
