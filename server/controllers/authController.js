@@ -109,7 +109,6 @@ exports.getMe = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch profile ❌" });
   }
 };
-
 /* ─── UPDATE PROFILE ─────────────────────────────────────────────────── */
 exports.updateProfile = async (req, res) => {
   try {
@@ -124,6 +123,45 @@ exports.updateProfile = async (req, res) => {
     res.json({ message: "Profile updated ✅", user: updated });
   } catch (err) {
     console.error("UpdateProfile error:", err);
+    res.status(500).json({ message: "Update failed ❌" });
+  }
+};
+
+/* ─── CHANGE PASSWORD ────────────────────────────────────────────────── */
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id);
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Incorrect current password ❌" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ message: "Password changed successfully ✅" });
+  } catch (err) {
+    console.error("ChangePassword error:", err);
+    res.status(500).json({ message: "Failed to change password ❌" });
+  }
+};
+
+/* ─── UPDATE NOTIFICATIONS ───────────────────────────────────────────── */
+exports.updateNotifications = async (req, res) => {
+  try {
+    const { notifications } = req.body;
+    // Assuming User model has a notifications field (as a subdocument or JSON)
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { notificationSettings: notifications },
+      { new: true }
+    );
+
+    res.json({ message: "Notification settings updated ✅", settings: user.notificationSettings });
+  } catch (err) {
+    console.error("UpdateNotifications error:", err);
     res.status(500).json({ message: "Update failed ❌" });
   }
 };

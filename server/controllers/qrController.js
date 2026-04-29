@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const crypto = require("crypto");
 const QRSession = require("../models/QRSession");
 const Attendance = require("../models/Attendance");
@@ -51,6 +52,11 @@ exports.startQR = async (req, res) => {
       return res.status(400).json({ message: "Teacher location required ❌" });
     }
 
+    // Validate ObjectIDs to prevent CastError
+    const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
+    const validClassId = isValidId(classId) ? classId : null;
+    const validSubjectId = isValidId(subjectId) ? subjectId : null;
+
     // Clear any existing timer for this teacher
     if (qrIntervals[teacherId]) {
       clearTimeout(qrIntervals[teacherId]);
@@ -68,8 +74,8 @@ exports.startQR = async (req, res) => {
 
     const session = await QRSession.create({
       teacherId,
-      classId:    classId   || null,
-      subjectId:  subjectId || null,
+      classId:    validClassId,
+      subjectId:  validSubjectId,
       currentQR:  firstQR,
       expiresAt,
       teacherLat: lat,
@@ -94,8 +100,8 @@ exports.startQR = async (req, res) => {
     console.log(`✅ QR session started. First QR: ${firstQR}`);
 
     // Increment subject totalClasses
-    if (subjectId) {
-      await Subject.findByIdAndUpdate(subjectId, { $inc: { totalClasses: 1 } });
+    if (validSubjectId) {
+      await Subject.findByIdAndUpdate(validSubjectId, { $inc: { totalClasses: 1 } });
     }
 
     // Start rotating QR
@@ -114,8 +120,8 @@ exports.startQR = async (req, res) => {
 
         // Find all class students
         let allStudents = [];
-        if (classId) {
-          const cls = await Class.findById(classId).populate("students");
+        if (validClassId) {
+          const cls = await Class.findById(validClassId).populate("students");
           allStudents = cls ? cls.students : [];
         } else {
           allStudents = await User.find({ role: "student" });
@@ -134,8 +140,8 @@ exports.startQR = async (req, res) => {
         const absentDocs = absentStudents.map((s) => ({
           studentId:  s._id,
           sessionId:  session._id,
-          subjectId:  subjectId || null,
-          classId:    classId   || null,
+          subjectId:  validSubjectId,
+          classId:    validClassId,
           name:       s.name,
           rollNo:     s.rollNo,
           className:  s.section || "",

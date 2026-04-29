@@ -57,11 +57,14 @@ app.use("/api/auth",          require("./routes/authRoutes"));
 app.use("/api/qr",            require("./routes/qrRoutes"));
 app.use("/api/attendance",    require("./routes/attendanceRoutes"));
 app.use("/api/admin",         require("./routes/adminRoutes"));
+app.use("/api/authority",     require("./routes/authorityRoutes"));
+app.use("/api/events",        require("./routes/eventRoutes"));
 app.use("/api/teacher",       require("./routes/teacherRoutes"));
 app.use("/api/student",       require("./routes/studentRoutes"));
 app.use("/api/classes",       require("./routes/classRoutes"));
 app.use("/api/leave",         require("./routes/leaveRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/timetable",     require("./routes/timetableRoutes"));
 
 /* =============================================================
    🔹 HEALTH CHECK
@@ -106,8 +109,8 @@ app.use((err, req, res, next) => {
 ============================================================= */
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`\n🔥 Smart Attendance Server running on port ${PORT}`);
-  console.log(`   ➜ Local:   http://localhost:${PORT}`);
+  console.log(`   ➜ Network: http://0.0.0.0:${PORT}`);
   console.log(`   ➜ Health:  http://localhost:${PORT}/\n`);
 });

@@ -53,6 +53,9 @@ exports.scanQR = async (req, res) => {
 
     const alreadyMarked = await Attendance.findOne({ studentId: student._id, sessionId: session._id });
     if (alreadyMarked) {
+      if (alreadyMarked.status === "onDuty") {
+        return res.status(409).json({ message: "You are already marked as On-Duty by HOD 🏆" });
+      }
       return res.status(409).json({ message: "Already marked ✅", distance: Math.round(distance) });
     }
 

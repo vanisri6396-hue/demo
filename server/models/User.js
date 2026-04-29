@@ -32,7 +32,13 @@ const userSchema = new mongoose.Schema(
 
     // ── Status ───────────────────────────────────────
     isActive:   { type: Boolean, default: true },
-    isVerified: { type: Boolean, default: false }
+    isVerified: { type: Boolean, default: false },
+    notificationSettings: {
+      attendanceConfirmation: { type: Boolean, default: true },
+      leaveAlerts:           { type: Boolean, default: true },
+      weeklySummary:         { type: Boolean, default: true },
+      securityAlerts:        { type: Boolean, default: true }
+    }
   },
   { timestamps: true }
 );

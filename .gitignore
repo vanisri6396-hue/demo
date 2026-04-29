@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment Variables
+.env
+server/.env
+client/.env
+
+# IDE / OS Files
+.vscode/
+.idea/
+.DS_Store
+*.log
+
+# Build Outputs
+client/dist/
+client/build/
+server/dist/
+
+# Seed Scripts (optional, but usually safe to ignore if they are one-offs)
+# seed_events.js
+# seedTimetable.js

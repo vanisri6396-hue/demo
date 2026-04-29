@@ -7,5 +7,7 @@ router.post("/register", auth.register);
 router.post("/login",    auth.login);
 router.get("/me",        verifyToken, auth.getMe);
 router.put("/profile",   verifyToken, auth.updateProfile);
+router.put("/change-password", verifyToken, auth.changePassword);
+router.put("/notifications",  verifyToken, auth.updateNotifications);
 
 module.exports = router;
