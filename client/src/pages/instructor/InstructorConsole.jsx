@@ -26,8 +26,9 @@ export default function InstructorConsole() {
     const newSocket = io(BASE_URL);
     setSocket(newSocket);
 
-    newSocket.on('new-qr-token', (token) => {
-      setQrToken(token);
+    newSocket.on('qr-update', (data) => {
+      // Ensure we only update if it's our session
+      setQrToken(data.qr);
     });
 
     return () => newSocket.close();
@@ -72,7 +73,7 @@ export default function InstructorConsole() {
         if (res.data.sessionId) {
           setSessionActive(true);
           setTimeLeft(120);
-          setQrToken(res.data.token || "SESSION_STARTED");
+          // Join the room for this session
           socket.emit('join-session', res.data.sessionId);
         }
       });
