@@ -211,7 +211,7 @@ export default function InstructorConsole() {
               <input 
                 type="range" 
                 min="0" 
-                max="300" 
+                max="200" 
                 step="10"
                 value={radius}
                 onChange={(e) => setRadius(e.target.value)}
@@ -220,7 +220,7 @@ export default function InstructorConsole() {
               />
               <div className="flex justify-between text-xs text-gray-400 font-medium mt-2">
                 <span>0m</span>
-                <span>300m</span>
+                <span>200m</span>
               </div>
             </div>
 
