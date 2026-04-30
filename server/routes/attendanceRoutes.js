@@ -5,7 +5,7 @@ const { verifyToken, allowRoles } = require("../middleware/authMiddleware");
 
 // Student scans QR (no auth required to allow guest scan with studentId in body,
 // but verifyToken is recommended — kept flexible)
-router.post("/scan", ctrl.scanQR);
+router.post("/scan", verifyToken, allowRoles("student"), ctrl.scanQR);
 
 // Student's own history
 router.get("/my",    verifyToken, allowRoles("student"), ctrl.getMyAttendance);
