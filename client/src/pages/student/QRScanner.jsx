@@ -13,29 +13,45 @@ export default function QRScanner() {
 
   useEffect(() => {
     // Get location immediately
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => setStatus({ type: 'error', message: 'Please enable GPS location to mark attendance.' })
-    );
+    const getLoc = () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => {
+          console.error("GPS Error:", err);
+          setStatus({ type: 'error', message: 'Please enable GPS location to mark attendance.' });
+        },
+        { enableHighAccuracy: true }
+      );
+    };
+
+    getLoc();
 
     const scanner = new Html5QrcodeScanner('reader', {
-      fps: 10,
-      qrbox: { width: 250, height: 250 },
+      fps: 15,
+      qrbox: { width: 280, height: 280 },
       rememberLastUsedCamera: true,
+      aspectRatio: 1.0
     });
 
     scanner.render(
-      (decodedText) => {
-        scanner.clear();
+      async (decodedText) => {
+        // Only stop if we have location
         setScanning(false);
-        handleScanSuccess(decodedText);
+        await handleScanSuccess(decodedText);
+        scanner.clear();
       },
       (error) => {
-        // console.warn(error);
+        // Ignore minor scan errors
       }
     );
 
-    return () => scanner.clear();
+    return () => {
+      try {
+        scanner.clear();
+      } catch (e) {
+        console.error("Scanner cleanup error:", e);
+      }
+    };
   }, []);
 
   const handleScanSuccess = async (qrValue) => {
