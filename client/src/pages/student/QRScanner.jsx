@@ -55,6 +55,12 @@ export default function QRScanner() {
   };
 
   const handleScanSuccess = async (qrValue) => {
+    if (qrValue === 'WAITING_FOR_SESSION' || qrValue === 'SESSION_ENDED') {
+      setStatus({ type: 'error', message: 'Class session is not active.' });
+      await stopScanner();
+      return;
+    }
+
     if (!location) {
       setLoading(true);
       // Wait for a few seconds to see if GPS connects

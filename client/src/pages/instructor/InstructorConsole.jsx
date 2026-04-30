@@ -160,11 +160,17 @@ export default function InstructorConsole() {
           {/* QR Code Card */}
           <div className="glass-card p-6 flex flex-col items-center justify-center text-center h-[380px]">
             <div className={`p-4 bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 transition-all duration-300 ${sessionActive ? 'shadow-glow border-primary-200 ring-4 ring-primary-50' : 'opacity-70'}`}>
-              <QRCodeSVG 
-                value={qrToken} 
-                size={180} 
-                fgColor={sessionActive ? "#1E293B" : "#94A3B8"} 
-              />
+              {sessionActive ? (
+                <QRCodeSVG 
+                  value={qrToken} 
+                  size={180} 
+                  fgColor="#1E293B" 
+                />
+              ) : (
+                <div className="w-[180px] h-[180px] bg-gray-50 rounded-xl flex items-center justify-center border border-dashed border-gray-200">
+                  <span className="text-gray-400 font-bold text-sm uppercase tracking-widest text-center px-4">Ready to Generate</span>
+                </div>
+              )}
             </div>
             
             {sessionActive ? (
