@@ -25,7 +25,7 @@ export default function InchargeDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Filter for requests needing Class Incharge approval (step 1)
-      setRequests(res.data.pending.filter(r => r.approvals.classIncharge.status === 'pending'));
+      setRequests(res.data.requests.filter(r => r.approvals?.classIncharge?.status === 'pending'));
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
