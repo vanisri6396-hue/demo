@@ -42,18 +42,26 @@ export default function ODRequests() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate submission for now
-    const newRequest = {
-      _id: Date.now().toString(),
-      type: 'od',
-      status: 'pending',
-      reason: formData.eventName + ' - ' + formData.reason,
-      createdAt: new Date().toISOString(),
-      subjectId: { name: 'Multiple Subjects' }
-    };
-    setRequests([newRequest, ...requests]);
-    setShowModal(false);
-    setFormData({ eventName: '', date: '', reason: '' });
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${BASE_URL}/api/leave/submit`, {
+        type: 'onDuty',
+        date: formData.date,
+        reason: `${formData.eventName} - ${formData.reason}`,
+        proofUrl: "https://example.com/letter.pdf" // Placeholder until real upload is added
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      alert("OD Request submitted successfully ✅");
+      window.location.reload(); // Refresh to show new request
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit request ❌");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
