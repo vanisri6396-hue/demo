@@ -1,133 +1,105 @@
-import { useState, useEffect, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import io from 'socket.io-client';
 import { BASE_URL } from '../../config';
-import { Camera, MapPin, Loader2, CheckCircle, AlertCircle, RefreshCcw, CameraOff } from 'lucide-react';
+import { MapPin, Loader2, CheckCircle, AlertCircle, RefreshCcw, Wifi, Radio } from 'lucide-react';
 
 export default function QRScanner() {
-  const [scanning, setScanning] = useState(false);
+  const [activeSessionQr, setActiveSessionQr] = useState(null);
   const [status, setStatus] = useState({ type: 'idle', message: '' });
-  const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [cameraError, setCameraError] = useState(null);
-  
-  const scannerRef = useRef(null);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
-    // Get location immediately
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => setStatus({ type: 'error', message: 'Please enable GPS location to mark attendance.' }),
-      { enableHighAccuracy: true }
-    );
+    // Connect to WebSocket to listen for active sessions
+    const socket = io(BASE_URL);
 
-    return () => stopScanner();
+    socket.on('connect', () => {
+      setSocketConnected(true);
+    });
+
+    socket.on('disconnect', () => {
+      setSocketConnected(false);
+      setActiveSessionQr(null);
+    });
+
+    socket.on('qr-update', (data) => {
+      setActiveSessionQr(data.qr);
+    });
+
+    socket.on('session-stopped', () => {
+      setActiveSessionQr(null);
+      if (status.type === 'idle') {
+        setStatus({ type: 'error', message: 'Class session has ended.' });
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
-  const startScanner = async () => {
-    try {
-      setCameraError(null);
-      const html5QrCode = new Html5Qrcode("reader");
-      scannerRef.current = html5QrCode;
+  // Clear active session if no ping for 10 seconds (in case teacher disconnects)
+  useEffect(() => {
+    if (!activeSessionQr) return;
+    const timer = setTimeout(() => {
+      setActiveSessionQr(null);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [activeSessionQr]);
 
-      const config = { fps: 15, qrbox: { width: 250, height: 250 } };
-
-      await html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        async (decodedText) => {
-          await handleScanSuccess(decodedText);
-        }
-      );
-      setScanning(true);
-    } catch (err) {
-      console.error("Camera Start Error:", err);
-      setCameraError("Camera access denied or not found. Please check browser permissions.");
-    }
-  };
-
-  const stopScanner = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
-      await scannerRef.current.stop();
-      scannerRef.current.clear();
-      setScanning(false);
-    }
-  };
-
-  const handleScanSuccess = async (qrValue) => {
-    if (qrValue === 'WAITING_FOR_SESSION' || qrValue === 'SESSION_ENDED') {
-      setStatus({ type: 'error', message: 'Class session is not active.' });
-      await stopScanner();
+  const handleCheckIn = () => {
+    if (!activeSessionQr) {
+      setStatus({ type: 'error', message: 'No active session found. Wait for teacher to start.' });
       return;
     }
 
-    if (!location) {
-      setLoading(true);
-      // Wait for a few seconds to see if GPS connects
-      let retries = 0;
-      const checkLoc = setInterval(async () => {
-        retries++;
-        if (location) {
-          clearInterval(checkLoc);
-          await proceedWithAttendance(qrValue);
-        } else if (retries > 5) {
-          clearInterval(checkLoc);
-          setLoading(false);
-          setStatus({ type: 'error', message: 'GPS signal is weak. Move near a window and try again.' });
-        }
-      }, 1000);
-      return;
-    }
-
-    await proceedWithAttendance(qrValue);
-  };
-
-  const proceedWithAttendance = async (qrValue) => {
-    await stopScanner();
     setLoading(true);
-    
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post(`${BASE_URL}/api/attendance/scan`, {
-        qr: qrValue,
-        lat: location.lat,
-        lng: location.lng
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const token = localStorage.getItem('token');
+          const res = await axios.post(`${BASE_URL}/api/attendance/scan`, {
+            qr: activeSessionQr,
+            lat: latitude,
+            lng: longitude
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
 
-      setStatus({ type: 'success', message: res.data.message });
-    } catch (err) {
-      setStatus({ 
-        type: 'error', 
-        message: err.response?.data?.message || 'Scan failed. Try again.' 
-      });
-    } finally {
-      setLoading(false);
-    }
+          setStatus({ type: 'success', message: res.data.message });
+        } catch (err) {
+          setStatus({ 
+            type: 'error', 
+            message: err.response?.data?.message || 'Check-in failed. Try again.' 
+          });
+        } finally {
+          setLoading(false);
+        }
+      },
+      (err) => {
+        setLoading(false);
+        setStatus({ type: 'error', message: 'GPS access denied. Please enable location.' });
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   const resetScanner = () => {
-    window.location.reload();
-  };
-
-  const retryGPS = () => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => setStatus({ type: 'error', message: 'Please enable GPS location to mark attendance.' }),
-      { enableHighAccuracy: true }
-    );
+    setStatus({ type: 'idle', message: '' });
   };
 
   return (
     <div className="max-w-[600px] mx-auto pb-20 p-4">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Mark Attendance</h1>
-        <p className="text-gray-500 font-medium">Scan the QR code on your teacher's screen.</p>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Smart Check-In</h1>
+        <p className="text-gray-500 font-medium">Tap the button to verify your presence.</p>
       </div>
 
-      <div className="glass-card overflow-hidden bg-white border-gray-100 shadow-2xl relative min-h-[400px] flex flex-col">
-        {/* Status Overlay */}
+      <div className="glass-card overflow-hidden bg-white border-gray-100 shadow-2xl relative min-h-[400px] flex flex-col items-center justify-center p-8">
+        
+        {/* Status Overlays */}
         {status.type !== 'idle' && !loading && (
           <div className="absolute inset-0 z-30 flex flex-col items-center justify-center p-8 text-center bg-white/95">
             {status.type === 'success' ? (
@@ -136,85 +108,67 @@ export default function QRScanner() {
               <AlertCircle size={80} className="text-red-500 mb-4" />
             )}
             <h3 className={`text-2xl font-black mb-2 ${status.type === 'success' ? 'text-green-900' : 'text-red-900'}`}>
-              {status.type === 'success' ? 'Attendance Marked!' : 'Scan Failed'}
+              {status.type === 'success' ? 'Attendance Marked!' : 'Check-In Failed'}
             </h3>
             <p className="text-gray-600 font-bold">{status.message}</p>
-            <button onClick={resetScanner} className="mt-8 flex items-center gap-2 text-primary-600 font-black uppercase tracking-widest text-sm">
-              <RefreshCcw size={18} /> Restart
+            <button onClick={resetScanner} className="mt-8 flex items-center gap-2 text-primary-600 font-black uppercase tracking-widest text-sm bg-primary-50 px-6 py-3 rounded-xl hover:bg-primary-100 transition-colors">
+              <RefreshCcw size={18} /> Go Back
             </button>
           </div>
         )}
 
         {/* Loading Overlay */}
         {loading && (
-          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
             <Loader2 className="animate-spin text-primary-500" size={50} />
-            <p className="text-primary-900 font-black mt-4 uppercase tracking-widest text-xs">Waiting for GPS & Processing...</p>
+            <p className="text-primary-900 font-black mt-4 uppercase tracking-widest text-xs">Verifying GPS Location...</p>
           </div>
         )}
 
-        {/* Scanner Body */}
-        <div className="flex-1 bg-gray-950 relative flex items-center justify-center overflow-hidden">
-          <div id="reader" className="w-full h-full"></div>
-          
-          {!scanning && status.type === 'idle' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              {cameraError ? (
-                <>
-                  <CameraOff size={48} className="text-red-500 mb-4" />
-                  <p className="text-white font-bold mb-6">{cameraError}</p>
-                </>
+        {/* Default View */}
+        {status.type === 'idle' && !loading && (
+          <div className="flex flex-col items-center w-full">
+            <div className={`relative w-48 h-48 rounded-full flex items-center justify-center mb-10 transition-all duration-500 ${
+              activeSessionQr 
+                ? 'bg-primary-50 shadow-[0_0_60px_-15px_rgba(249,115,22,0.3)] border-4 border-primary-200' 
+                : 'bg-gray-50 border-4 border-dashed border-gray-200'
+            }`}>
+              {activeSessionQr && (
+                <div className="absolute inset-0 rounded-full border-4 border-primary-400 opacity-50 animate-ping"></div>
+              )}
+              {activeSessionQr ? (
+                <Radio size={64} className="text-primary-500 animate-pulse" />
               ) : (
-                <>
-                  <Camera size={48} className="text-gray-600 mb-4" />
-                  <p className="text-gray-400 font-medium mb-6">Camera is ready</p>
-                </>
-              )}
-              <button 
-                onClick={startScanner}
-                disabled={!location}
-                className={`px-8 py-3 rounded-xl font-black uppercase tracking-widest shadow-lg transition-all active:scale-95 ${
-                  location ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                {location ? 'Open Camera' : 'Waiting for GPS...'}
-              </button>
-              {!location && (
-                <button onClick={retryGPS} className="mt-4 text-xs text-primary-400 font-bold underline">Retry GPS</button>
+                <Wifi size={64} className="text-gray-300" />
               )}
             </div>
-          )}
-        </div>
 
-        {/* Footer Stats */}
-        <div className="p-6 bg-white border-t border-gray-50 grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${location ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
-              <MapPin size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GPS</p>
-              <p className="text-xs font-bold text-gray-900 truncate">
-                {location ? 'Connected' : 'Searching...'}
+            <button 
+              onClick={handleCheckIn}
+              disabled={!activeSessionQr}
+              className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-3 text-lg ${
+                activeSessionQr 
+                  ? 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-primary-200 active:scale-[0.98]' 
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              <MapPin size={24} />
+              {activeSessionQr ? 'Mark Attendance' : 'Waiting for Class...'}
+            </button>
+
+            {!activeSessionQr && (
+              <p className="mt-6 text-sm text-gray-400 font-medium text-center">
+                Listening for teacher's signal... <br/> Ensure your network is connected.
               </p>
-            </div>
+            )}
           </div>
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${scanning ? 'bg-primary-50 text-primary-600' : 'bg-gray-50 text-gray-400'}`}>
-              <Camera size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Scanner</p>
-              <p className="text-xs font-bold text-gray-900">{scanning ? 'Active' : 'Off'}</p>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className="mt-8 p-4 bg-primary-50 border border-primary-100 rounded-2xl flex gap-3 items-start">
-        <AlertCircle className="text-primary-500 shrink-0 mt-1" size={20} />
-        <p className="text-xs font-medium text-primary-900 leading-relaxed">
-          Ensure you are in the classroom. The system will cross-verify your live GPS location against the teacher's position.
+      <div className="mt-8 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex gap-3 items-start">
+        <AlertCircle className="text-blue-500 shrink-0 mt-1" size={20} />
+        <p className="text-xs font-medium text-blue-900 leading-relaxed">
+          <strong>How it works:</strong> You no longer need to scan a QR code! Just wait for the teacher to start the session, then tap "Mark Attendance". The system will use your GPS to verify you are inside the classroom.
         </p>
       </div>
     </div>

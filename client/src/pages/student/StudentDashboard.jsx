@@ -67,7 +67,7 @@ export default function StudentDashboard() {
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
               <QrCode size={24} />
             </div>
-            <span className="font-bold pr-2">Scan QR Now</span>
+            <span className="font-bold pr-2">Smart Check-In</span>
           </Link>
         </div>
       </div>
