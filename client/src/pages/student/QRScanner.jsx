@@ -60,7 +60,10 @@ export default function QRScanner() {
         const { latitude, longitude } = pos.coords;
         try {
           const token = localStorage.getItem('token');
-          const res = await axios.post(`${BASE_URL}/api/attendance/scan`, {
+          const targetUrl = `${BASE_URL}/api/attendance/scan`;
+          console.log(`🚀 Sending Check-in to: ${targetUrl}`);
+          
+          const res = await axios.post(targetUrl, {
             qr: activeSessionQr,
             lat: latitude,
             lng: longitude
