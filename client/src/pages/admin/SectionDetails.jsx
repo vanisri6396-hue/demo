@@ -3,12 +3,16 @@ import axios from 'axios';
 import { BASE_URL } from '../../config';
 import { 
   Users, TrendingUp, UserCheck, Clock, Download, 
-  Mail, Edit3, ChevronRight, Search, Filter, Loader2
+  Mail, Edit3, ChevronRight, Search, Filter, Loader2, Plus, XCircle 
 } from 'lucide-react';
 
 export default function SectionDetails() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [newStudent, setNewStudent] = useState({
+    name: '', email: '', password: '', rollNo: '', department: 'CSE', section: 'C', role: 'student'
+  });
   const [stats, setStats] = useState([
     { label: 'TOTAL STUDENTS', value: '0', sub: 'Loading...', icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
     { label: 'OVERALL ATTENDANCE', value: '0%', sub: '...', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
@@ -16,37 +20,55 @@ export default function SectionDetails() {
     { label: 'ALERTS', value: '0', sub: 'Students needing review', icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
   ]);
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const [usersRes, dashRes] = await Promise.all([
+        axios.get(`${BASE_URL}/api/admin/users?role=student`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${BASE_URL}/api/admin/dashboard`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      setStudents(usersRes.data.users || []);
+      
+      const d = dashRes.data;
+      setStats([
+        { label: 'TOTAL STUDENTS', value: d.totalStudents || '0', sub: 'Active Enrollment', icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
+        { label: 'OVERALL ATTENDANCE', value: `${d.today?.attendancePercent || 0}%`, sub: 'Daily Average', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
+        { label: 'TOTAL TEACHERS', value: d.totalTeachers || '0', sub: 'Active Faculty', icon: UserCheck, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { label: 'TODAY ABSENT', value: d.today?.absentToday || '0', sub: 'Students Missing', icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
+      ]);
+
+    } catch (err) {
+      console.error('Failed to fetch admin data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const [usersRes, dashRes] = await Promise.all([
-          axios.get(`${BASE_URL}/api/admin/users?role=student`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get(`${BASE_URL}/api/admin/dashboard`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-        ]);
-
-        setStudents(usersRes.data.users || []);
-        
-        const d = dashRes.data;
-        setStats([
-          { label: 'TOTAL STUDENTS', value: d.totalStudents || '0', sub: 'Active Enrollment', icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
-          { label: 'OVERALL ATTENDANCE', value: `${d.today?.attendancePercent || 0}%`, sub: 'Daily Average', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: 'TOTAL TEACHERS', value: d.totalTeachers || '0', sub: 'Active Faculty', icon: UserCheck, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'TODAY ABSENT', value: d.today?.absentToday || '0', sub: 'Students Missing', icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
-        ]);
-
-      } catch (err) {
-        console.error('Failed to fetch admin data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
+
+  const handleCreateStudent = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${BASE_URL}/api/admin/users`, newStudent, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShowModal(false);
+      setNewStudent({ name: '', email: '', password: '', rollNo: '', department: 'CSE', section: 'C', role: 'student' });
+      fetchData(); // Refresh list
+      alert('Student created successfully! ✅');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create student ❌');
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8 max-w-[1200px] mx-auto">
@@ -63,8 +85,11 @@ export default function SectionDetails() {
           <button className="btn-secondary flex items-center gap-2">
             <Mail size={18} /> Notify Parents
           </button>
-          <button className="btn-primary flex items-center gap-2">
-            <Edit3 size={18} /> Update Timetable
+          <button 
+            onClick={() => setShowModal(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus size={18} /> Add Student
           </button>
         </div>
       </div>
@@ -218,6 +243,93 @@ export default function SectionDetails() {
           </div>
         </div>
       </div>
+
+      {/* Add Student Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="p-8 border-b border-gray-100 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-black text-gray-900">Add New Student</h2>
+                <p className="text-gray-500 text-sm font-medium">Create a student record in MongoDB</p>
+              </div>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <XCircle size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateStudent} className="p-8 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Full Name</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. John Doe"
+                  className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all"
+                  value={newStudent.name}
+                  onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Roll No</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="CS24050"
+                    className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all"
+                    value={newStudent.rollNo}
+                    onChange={(e) => setNewStudent({...newStudent, rollNo: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Section</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="C"
+                    className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all"
+                    value={newStudent.section}
+                    onChange={(e) => setNewStudent({...newStudent, section: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Email Address</label>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="student@university.edu"
+                  className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all"
+                  value={newStudent.email}
+                  onChange={(e) => setNewStudent({...newStudent, email: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Temporary Password</label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="••••••••"
+                  className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all"
+                  value={newStudent.password}
+                  onChange={(e) => setNewStudent({...newStudent, password: e.target.value})}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full btn-primary py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-primary-100 mt-4"
+              >
+                Create Student Record <ChevronRight size={18} />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
