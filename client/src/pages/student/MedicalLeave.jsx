@@ -48,24 +48,33 @@ export default function MedicalLeave() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
     if (isPastDeadline && formData.date === new Date().toISOString().split('T')[0]) {
       alert("⚠️ Deadline Missed: Medical leave for today must be submitted before 5:00 PM. This request will be marked as 'Absent' by default.");
     }
     
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${BASE_URL}/api/student/leaves`, {
+      await axios.post(`${BASE_URL}/api/leave/submit`, {
         type: 'medical',
         date: formData.date,
         reason: formData.disease + ': ' + formData.description,
+        proofUrl: "https://example.com/prescription.jpg" // Placeholder until real upload is added
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      alert("Medical Leave submitted successfully ✅");
       setShowModal(false);
+      setShowTemplate(false);
       fetchRequests();
     } catch (err) {
-      alert("Submission failed");
+      console.error(err);
+      alert("Submission failed ❌");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -242,11 +251,13 @@ export default function MedicalLeave() {
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Leave Date(s)</label>
-                <input 
-                  type="date" 
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-red-400"
-                  required
-                />
+                  <input 
+                    type="date" 
+                    value={formData.date}
+                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-red-400"
+                    required
+                  />
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Upload Certificate (PDF/JPG)</label>
