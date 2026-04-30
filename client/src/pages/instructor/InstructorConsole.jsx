@@ -210,17 +210,17 @@ export default function InstructorConsole() {
             <div className="mb-8">
               <input 
                 type="range" 
-                min="10" 
-                max="50" 
-                step="5"
+                min="0" 
+                max="300" 
+                step="10"
                 value={radius}
                 onChange={(e) => setRadius(e.target.value)}
                 disabled={sessionActive}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-500"
               />
               <div className="flex justify-between text-xs text-gray-400 font-medium mt-2">
-                <span>10m</span>
-                <span>50m</span>
+                <span>0m</span>
+                <span>300m</span>
               </div>
             </div>
 
