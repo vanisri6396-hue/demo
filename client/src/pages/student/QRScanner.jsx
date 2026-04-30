@@ -48,7 +48,7 @@ export default function QRScanner() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(`${BASE_URL}/api/attendance/scan-qr`, {
+      const res = await axios.post(`${BASE_URL}/api/attendance/scan`, {
         qr: qrValue,
         lat: location.lat,
         lng: location.lng
