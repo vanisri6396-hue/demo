@@ -59,24 +59,36 @@ export default function InstructorConsole() {
       }
 
       // Get teacher's current location
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        const { latitude, longitude } = position.coords;
-        
-        const res = await axios.post(`${BASE_URL}/api/qr/start`, {
-          lat: latitude,
-          lng: longitude,
-          radius: parseInt(radius)
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          try {
+            const res = await axios.post(`${BASE_URL}/api/qr/start`, {
+              lat: latitude,
+              lng: longitude,
+              radius: parseInt(radius)
+            }, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
 
-        if (res.data.sessionId) {
-          setSessionActive(true);
-          setTimeLeft(120);
-          // Join the room for this session
-          socket.emit('join-session', res.data.sessionId);
-        }
-      });
+            if (res.data.sessionId) {
+              setSessionActive(true);
+              setTimeLeft(120);
+              // Join the room for this session
+              socket.emit('join-session', res.data.sessionId);
+            }
+          } catch (apiErr) {
+            console.error(apiErr);
+            alert("Failed to start session. " + (apiErr.response?.data?.message || ""));
+          }
+        },
+        (err) => {
+          console.error("Geolocation Error:", err);
+          alert("Location permission denied. Please allow location access to start the attendance session.");
+        },
+        { enableHighAccuracy: true }
+      );
     } catch (err) {
       console.error(err);
       alert("Failed to start session. Check console.");
