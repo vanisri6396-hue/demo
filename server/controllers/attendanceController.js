@@ -24,6 +24,9 @@ exports.scanQR = async (req, res) => {
     const { lat, lng } = req.body;
     const studentId = req.body.studentId || req.user?.id;
 
+    console.log(`[SCAN DEBUG] Request from UserID: ${req.user?.id}, Role: ${req.user?.role}`);
+    console.log(`[SCAN DEBUG] QR Received: ${qr}, Lat: ${lat}, Lng: ${lng}`);
+
     if (!qr)       return res.status(400).json({ message: "QR code required ❌" });
     if (!lat||!lng) return res.status(400).json({ message: "Location required ❌" });
 

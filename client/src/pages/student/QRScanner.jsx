@@ -60,6 +60,9 @@ export default function QRScanner() {
         const { latitude, longitude } = pos.coords;
         try {
           const token = localStorage.getItem('token');
+          const userData = JSON.parse(localStorage.getItem('user') || '{}');
+          console.log(`👤 Logged in as: ${userData.name} (Role: ${userData.role})`);
+          
           const targetUrl = `${BASE_URL}/api/attendance/scan`;
           console.log(`🚀 Sending Check-in to: ${targetUrl}`);
           
