@@ -24,9 +24,6 @@ exports.scanQR = async (req, res) => {
     const { lat, lng } = req.body;
     const studentId = req.body.studentId || req.user?.id;
 
-    console.log(`[SCAN DEBUG] Request from UserID: ${req.user?.id}, Role: ${req.user?.role}`);
-    console.log(`[SCAN DEBUG] QR Received: ${qr}, Lat: ${lat}, Lng: ${lng}`);
-
     if (!qr)       return res.status(400).json({ message: "QR code required ❌" });
     if (!lat||!lng) return res.status(400).json({ message: "Location required ❌" });
 
@@ -35,12 +32,10 @@ exports.scanQR = async (req, res) => {
 
     const distance = getDistance(lat, lng, session.teacherLat, session.teacherLng);
 
-    // TEMPORARILY DISABLED FOR TESTING
     if (distance > session.radius) {
-      console.warn(`[TEST MODE] Ignoring Too Far: ${Math.round(distance)}m (allowed: ${session.radius}m)`);
-      // return res.status(403).json({
-      //   message: `Too far ❌ (${Math.round(distance)}m — allowed: ${session.radius}m)`
-      // });
+      return res.status(403).json({
+        message: `You are too far from the classroom ❌ (Distance: ${Math.round(distance)}m, Allowed: ${session.radius}m)`
+      });
     }
 
     const now = Date.now();
@@ -48,8 +43,7 @@ exports.scanQR = async (req, res) => {
       const prev  = lastLocations[studentId];
       const speed = getDistance(prev.lat, prev.lng, lat, lng) / ((now - prev.time) / 1000);
       if (speed > 50) {
-        console.warn(`[TEST MODE] Ignoring Fake GPS: Speed ${speed}`);
-        // return res.status(403).json({ message: "Fake GPS detected 🚫" });
+        return res.status(403).json({ message: "Suspicious location movement detected 🚫" });
       }
     }
     lastLocations[studentId] = { lat, lng, time: now };
