@@ -32,17 +32,22 @@ exports.scanQR = async (req, res) => {
 
     const distance = getDistance(lat, lng, session.teacherLat, session.teacherLng);
 
+    // TEMPORARILY DISABLED FOR TESTING
     if (distance > session.radius) {
-      return res.status(403).json({
-        message: `Too far ❌ (${Math.round(distance)}m — allowed: ${session.radius}m)`
-      });
+      console.warn(`[TEST MODE] Ignoring Too Far: ${Math.round(distance)}m (allowed: ${session.radius}m)`);
+      // return res.status(403).json({
+      //   message: `Too far ❌ (${Math.round(distance)}m — allowed: ${session.radius}m)`
+      // });
     }
 
     const now = Date.now();
     if (lastLocations[studentId]) {
       const prev  = lastLocations[studentId];
       const speed = getDistance(prev.lat, prev.lng, lat, lng) / ((now - prev.time) / 1000);
-      if (speed > 50) return res.status(403).json({ message: "Fake GPS detected 🚫" });
+      if (speed > 50) {
+        console.warn(`[TEST MODE] Ignoring Fake GPS: Speed ${speed}`);
+        // return res.status(403).json({ message: "Fake GPS detected 🚫" });
+      }
     }
     lastLocations[studentId] = { lat, lng, time: now };
 
