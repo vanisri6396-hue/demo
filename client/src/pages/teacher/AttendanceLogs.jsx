@@ -9,26 +9,33 @@ export default function AttendanceLogs() {
   const user = JSON.parse(localStorage.getItem('user')) || {};
 
   useEffect(() => {
-    // For demo, we'll use dummy data but set up for real API call
     const fetchLogs = async () => {
       try {
-        // const res = await axios.get(`${BASE_URL}/api/attendance/teacher-logs/${user.id}`);
-        // setLogs(res.data);
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${BASE_URL}/api/teacher/history`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         
-        // Dummy data for now
-        setLogs([
-          { date: '2026-04-24', subject: 'Operating Systems', section: 'CSE-A', present: 54, total: 60, time: '09:30 AM' },
-          { date: '2026-04-23', subject: 'Operating Systems', section: 'CSE-A', present: 58, total: 60, time: '12:10 PM' },
-          { date: '2026-04-21', subject: 'OS Lab', section: 'CSE-A', present: 59, total: 60, time: '11:20 AM' },
-        ]);
+        // Map backend history to frontend log format
+        const history = (res.data.sessions || []).map(s => ({
+          id: s._id,
+          date: s.createdAt,
+          subject: s.subjectId?.name || 'Class',
+          section: s.classId?.section || 'A',
+          present: s.presentCount || 0,
+          total: s.totalCount || 0,
+          time: new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+        
+        setLogs(history);
       } catch (err) {
-        console.error(err);
+        console.error('Failed to fetch teacher logs:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchLogs();
-  }, [user.id]);
+  }, []);
 
   const exportToExcel = () => {
     if (logs.length === 0) return;
@@ -158,7 +165,12 @@ export default function AttendanceLogs() {
           </div>
           <div>
             <p className="text-xs font-black text-green-700 uppercase tracking-widest">Avg. Attendance</p>
-            <p className="text-2xl font-black text-green-900">94.2%</p>
+            <p className="text-2xl font-black text-green-900">
+              {logs.length > 0 
+                ? `${Math.round((logs.reduce((acc, l) => acc + (l.present / l.total || 0), 0) / logs.length) * 100)}%`
+                : '0%'
+              }
+            </p>
           </div>
         </div>
         <div className="flex-1 glass-card p-6 flex items-center gap-4 bg-primary-50 border-primary-100">
@@ -166,8 +178,8 @@ export default function AttendanceLogs() {
             <FileSpreadsheet size={24} />
           </div>
           <div>
-            <p className="text-xs font-black text-primary-700 uppercase tracking-widest">Total Reports</p>
-            <p className="text-2xl font-black text-primary-900">248</p>
+            <p className="text-xs font-black text-primary-700 uppercase tracking-widest">Total Sessions</p>
+            <p className="text-2xl font-black text-primary-900">{logs.length}</p>
           </div>
         </div>
       </div>

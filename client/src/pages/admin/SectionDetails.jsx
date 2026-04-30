@@ -1,23 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { BASE_URL } from '../../config';
 import { 
   Users, TrendingUp, UserCheck, Clock, Download, 
-  Mail, Edit3, ChevronRight, Search, Filter 
+  Mail, Edit3, ChevronRight, Search, Filter, Loader2
 } from 'lucide-react';
 
 export default function SectionDetails() {
-  const [students, setStudents] = useState([
-    { rollNo: 'CS24001', name: 'Alice Johnson', attendance: 92, status: 'EXCELLENT' },
-    { rollNo: 'CS24002', name: 'Bob Miller', attendance: 68, status: 'CRITICAL' },
-    { rollNo: 'CS24003', name: 'Charlie Davis', attendance: 88, status: 'GOOD' },
-    { rollNo: 'CS24004', name: 'Diana Prince', attendance: 72, status: 'CRITICAL' },
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState([
+    { label: 'TOTAL STUDENTS', value: '0', sub: 'Loading...', icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
+    { label: 'OVERALL ATTENDANCE', value: '0%', sub: '...', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: 'DEPT HEAD', value: 'HOD', sub: 'Dept.', icon: UserCheck, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'ALERTS', value: '0', sub: 'Students needing review', icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
   ]);
 
-  const stats = [
-    { label: 'TOTAL STUDENTS', value: '40', sub: '100% Enrollment', icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
-    { label: 'OVERALL ATTENDANCE', value: '84%', sub: 'Target: 85%', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'CLASS TEACHER', value: 'Dr. Grace Hopper', sub: 'Computer Science Dept.', icon: UserCheck, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'PENDING REQUESTS', value: '03', sub: 'OD & Medical Needs Review', icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const [usersRes, dashRes] = await Promise.all([
+          axios.get(`${BASE_URL}/api/admin/users?role=student`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${BASE_URL}/api/admin/dashboard`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        setStudents(usersRes.data.users || []);
+        
+        const d = dashRes.data;
+        setStats([
+          { label: 'TOTAL STUDENTS', value: d.totalStudents || '0', sub: 'Active Enrollment', icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
+          { label: 'OVERALL ATTENDANCE', value: `${d.today?.attendancePercent || 0}%`, sub: 'Daily Average', icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
+          { label: 'TOTAL TEACHERS', value: d.totalTeachers || '0', sub: 'Active Faculty', icon: UserCheck, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'TODAY ABSENT', value: d.today?.absentToday || '0', sub: 'Students Missing', icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
+        ]);
+
+      } catch (err) {
+        console.error('Failed to fetch admin data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="flex flex-col gap-8 max-w-[1200px] mx-auto">
@@ -61,15 +90,15 @@ export default function SectionDetails() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Student Performance Log Table */}
-        <div className="lg:col-span-2 glass-card p-0 overflow-hidden">
+        <div className="lg:col-span-2 glass-card p-0 overflow-hidden min-h-[400px]">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
-            <h3 className="font-bold text-gray-900 text-lg">Student Performance Log</h3>
+            <h3 className="font-bold text-gray-900 text-lg">Student Directory</h3>
             <div className="flex gap-3">
               <div className="relative flex items-center">
                 <Search size={16} className="absolute left-3 text-gray-400" />
                 <input 
                   type="text" 
-                  placeholder="Search roll no..." 
+                  placeholder="Search student..." 
                   className="pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-400 w-48"
                 />
               </div>
@@ -80,55 +109,55 @@ export default function SectionDetails() {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/50">
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">ROLL NO</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">NAME</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">ATTENDANCE %</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">STATUS</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">ACTION</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {students.map((student, i) => (
-                  <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-700">{student.rollNo}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{student.name}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 bg-gray-100 rounded-full h-1.5 w-24 overflow-hidden">
-                          <div 
-                            className={`h-1.5 rounded-full ${student.attendance < 75 ? 'bg-red-500' : 'bg-green-500'}`} 
-                            style={{ width: `${student.attendance}%` }}
-                          ></div>
-                        </div>
-                        <span className={`text-sm font-bold ${student.attendance < 75 ? 'text-red-500' : 'text-gray-700'}`}>
-                          {student.attendance}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`badge ${student.status === 'CRITICAL' ? 'badge-danger' : student.status === 'EXCELLENT' ? 'badge-success' : 'badge-warning'}`}>
-                        {student.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-primary-600 hover:text-primary-700 text-sm font-semibold flex items-center gap-1 justify-end ml-auto">
-                        View Details <ChevronRight size={14} />
-                      </button>
-                    </td>
+            {loading ? (
+              <div className="flex flex-col items-center justify-center p-20 gap-4">
+                <Loader2 className="animate-spin text-primary-500" size={40} />
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Fetching Students...</p>
+              </div>
+            ) : students.length > 0 ? (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50">
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">ROLL NO</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">NAME</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">DEPARTMENT</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">STATUS</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">ACTION</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {students.map((student, i) => (
+                    <tr key={student._id || i} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-700">{student.rollNo || 'N/A'}</td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-bold text-gray-900">{student.name}</p>
+                        <p className="text-[10px] text-gray-400 font-medium">{student.email}</p>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                        {student.department} {student.section && `(${student.section})`}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`badge ${student.isActive ? 'badge-success' : 'badge-danger'}`}>
+                          {student.isActive ? 'ACTIVE' : 'INACTIVE'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button className="text-primary-600 hover:text-primary-700 text-sm font-semibold flex items-center gap-1 justify-end ml-auto">
+                          Profile <ChevronRight size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="p-20 text-center text-gray-500 font-medium italic">
+                No students found in the database.
+              </div>
+            )}
           </div>
           <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/30">
-            <p className="text-xs text-gray-500">Showing 4 of 40 students</p>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 border border-gray-200 rounded text-xs font-medium bg-white text-gray-500 hover:bg-gray-50">Previous</button>
-              <button className="px-3 py-1 border border-gray-200 rounded text-xs font-medium bg-white text-gray-500 hover:bg-gray-50">Next</button>
-            </div>
+            <p className="text-xs text-gray-500">Showing {students.length} students</p>
           </div>
         </div>
 

@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { BASE_URL } from '../../config';
 import { 
   UserSquare, 
   Mail, 
@@ -8,16 +10,36 @@ import {
   Plus, 
   Search, 
   Filter,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 
 export default function FacultyManager() {
-  const [faculty, setFaculty] = useState([
-    { id: 1, name: 'Dr. Alan Turing', email: 'alan.t@university.edu', courses: 3, classes: 12, rating: 4.8, status: 'Active' },
-    { id: 2, name: 'Prof. Grace Hopper', email: 'grace.h@university.edu', courses: 2, classes: 8, rating: 4.9, status: 'Active' },
-    { id: 3, name: 'Dr. John von Neumann', email: 'john.v@university.edu', courses: 4, classes: 16, rating: 4.7, status: 'On Leave' },
-    { id: 4, name: 'Prof. Ada Lovelace', email: 'ada.l@university.edu', courses: 3, classes: 10, rating: 4.9, status: 'Active' },
-  ]);
+  const [faculty, setFaculty] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState({ total: 0, active: 0 });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${BASE_URL}/api/admin/users?role=teacher`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const users = res.data.users || [];
+        setFaculty(users);
+        setSummary({
+          total: users.length,
+          active: users.filter(u => u.isActive).length
+        });
+      } catch (err) {
+        console.error('Faculty fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="max-w-[1200px] mx-auto pb-20">
@@ -34,23 +56,25 @@ export default function FacultyManager() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <div className="glass-card p-6 bg-white border-gray-100">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">TOTAL FACULTY</p>
-          <h3 className="text-3xl font-black text-gray-900">24</h3>
+          <h3 className="text-3xl font-black text-gray-900">{summary.total}</h3>
         </div>
         <div className="glass-card p-6 bg-white border-gray-100">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">CLASSES THIS WEEK</p>
-          <h3 className="text-3xl font-black text-green-600">142</h3>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">ACTIVE NOW</p>
+          <h3 className="text-3xl font-black text-green-600">{summary.active}</h3>
         </div>
         <div className="glass-card p-6 bg-white border-gray-100">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">AVG RATING</p>
-          <h3 className="text-3xl font-black text-primary-600">4.8</h3>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">DEPARTMENTS</p>
+          <h3 className="text-3xl font-black text-primary-600">
+            {new Set(faculty.map(f => f.department)).size}
+          </h3>
         </div>
         <div className="glass-card p-6 bg-white border-gray-100">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">STAFF ON LEAVE</p>
-          <h3 className="text-3xl font-black text-red-600">02</h3>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">PENDING VERIFICATION</p>
+          <h3 className="text-3xl font-black text-red-600">0</h3>
         </div>
       </div>
 
-      <div className="glass-card bg-white border-gray-100 overflow-hidden shadow-2xl">
+      <div className="glass-card bg-white border-gray-100 overflow-hidden shadow-2xl min-h-[400px]">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <div className="relative flex items-center">
             <Search size={18} className="absolute left-4 text-gray-400" />
@@ -64,58 +88,56 @@ export default function FacultyManager() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50/50 text-left border-b border-gray-100">
-                <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Faculty Member</th>
-                <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Courses</th>
-                <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Weekly Load</th>
-                <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Performance</th>
-                <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {faculty.map(member => (
-                <tr key={member.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/30 transition-colors">
-                  <td className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-400">
-                        <UserSquare size={24} />
-                      </div>
-                      <div>
-                        <p className="font-black text-gray-900">{member.name}</p>
-                        <p className="text-xs font-bold text-gray-400">{member.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <span className="font-bold text-gray-700">{member.courses} Subjects</span>
-                  </td>
-                  <td className="p-6">
-                    <span className="font-bold text-gray-700">{member.classes} Classes</span>
-                  </td>
-                  <td className="p-6">
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map(s => (
-                          <div key={s} className={`w-1.5 h-4 rounded-full ${s <= Math.floor(member.rating) ? 'bg-primary-500' : 'bg-gray-200'}`}></div>
-                        ))}
-                      </div>
-                      <span className="text-xs font-black text-gray-900 ml-1">{member.rating}</span>
-                    </div>
-                  </td>
-                  <td className="p-6 text-right">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
-                      member.status === 'Active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${member.status === 'Active' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                      {member.status}
-                    </span>
-                  </td>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center p-32 gap-4">
+              <Loader2 className="animate-spin text-primary-500" size={50} />
+              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Loading Faculty...</p>
+            </div>
+          ) : faculty.length > 0 ? (
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50/50 text-left border-b border-gray-100">
+                  <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Faculty Member</th>
+                  <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Department</th>
+                  <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Employee ID</th>
+                  <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {faculty.map(member => (
+                  <tr key={member._id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/30 transition-colors">
+                    <td className="p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-400">
+                          <UserSquare size={24} />
+                        </div>
+                        <div>
+                          <p className="font-black text-gray-900">{member.name}</p>
+                          <p className="text-xs font-bold text-gray-400">{member.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <span className="font-bold text-gray-700">{member.department || 'General'}</span>
+                    </td>
+                    <td className="p-6">
+                      <span className="font-bold text-gray-700">{member.employeeId || 'N/A'}</span>
+                    </td>
+                    <td className="p-6 text-right">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                        member.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${member.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        {member.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-32 text-center text-gray-500 italic">No faculty found.</div>
+          )}
         </div>
       </div>
     </div>
