@@ -5,6 +5,7 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 
 // Role-based pages
 import SectionDetails from "./pages/admin/SectionDetails";
+import StudentProfile from "./pages/admin/StudentProfile";
 import DepartmentIntelligence from "./pages/hod/DepartmentIntelligence";
 import ODRequests from "./pages/student/ODRequests";
 import MedicalLeave from "./pages/student/MedicalLeave";
@@ -75,6 +76,7 @@ export default function App() {
         }>
           <Route index element={<SectionDetails />} />
           <Route path="students" element={<SectionDetails />} />
+          <Route path="students/:id" element={<StudentProfile />} />
           <Route path="faculty" element={<FacultyManager />} />
           <Route path="timetable" element={<TimetableManager />} />
           <Route path="analytics" element={<HODStatistics />} />
