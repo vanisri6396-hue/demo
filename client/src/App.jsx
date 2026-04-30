@@ -74,7 +74,10 @@ export default function App() {
           </ProtectedRoute>
         }>
           <Route index element={<SectionDetails />} />
+          <Route path="students" element={<SectionDetails />} />
+          <Route path="faculty" element={<FacultyManager />} />
           <Route path="timetable" element={<TimetableManager />} />
+          <Route path="analytics" element={<HODStatistics />} />
           <Route path="events" element={<EventManager />} />
           <Route path="settings" element={<Settings />} />
         </Route>
