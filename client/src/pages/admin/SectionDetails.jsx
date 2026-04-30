@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { BASE_URL } from '../../config';
 import { 
@@ -167,9 +168,12 @@ export default function SectionDetails() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="text-primary-600 hover:text-primary-700 text-sm font-semibold flex items-center gap-1 justify-end ml-auto">
+                        <Link 
+                          to={`/admin/students/${student._id}`}
+                          className="text-primary-600 hover:text-primary-700 text-sm font-semibold flex items-center gap-1 justify-end ml-auto"
+                        >
                           Profile <ChevronRight size={14} />
-                        </button>
+                        </Link>
                       </td>
                     </tr>
                   ))}
