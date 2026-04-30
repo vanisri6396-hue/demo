@@ -28,7 +28,11 @@ exports.submitLeave = async (req, res) => {
       subjectId: subjectId || null,
       classId:   classId   || null,
       sessionId: sessionId || null,
-      status:    "pending"
+      status:    "pending",
+      approvals: {
+        classIncharge: { status: "pending" },
+        hod: { status: "pending" }
+      }
     });
 
     // Notify teachers of this class
