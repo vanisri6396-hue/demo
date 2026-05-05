@@ -81,7 +81,7 @@ exports.startQR = async (req, res) => {
       expiresAt,
       teacherLat: lat,
       teacherLng: lng,
-      radius:     radius || 50,
+      radius:     radius || 500,
       type:       type   || "regular",
       isActive:   true,
       presentStudents: []
