@@ -32,7 +32,11 @@ function scheduleNextRotation(teacherId, sessionId) {
       session.currentQR = newQR;
       await session.save();
 
-      global.io.emit("qr-update", { qr: newQR, sessionId });
+      global.io.emit("qr-update", { 
+        qr: newQR, 
+        sessionId, 
+        classId: session.classId 
+      });
       console.log(`🔄 QR rotated for teacher ${teacherId}: ${newQR}`);
 
       // Schedule next rotation
@@ -97,7 +101,11 @@ exports.startQR = async (req, res) => {
     };
 
     // Emit first QR
-    global.io.emit("qr-update", { qr: firstQR, sessionId: session._id });
+    global.io.emit("qr-update", { 
+      qr: firstQR, 
+      sessionId: session._id,
+      classId: session.classId
+    });
     console.log(`✅ QR session started. First QR: ${firstQR}`);
 
     // Increment subject totalClasses

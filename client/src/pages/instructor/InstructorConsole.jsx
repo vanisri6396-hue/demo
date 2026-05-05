@@ -27,8 +27,11 @@ export default function InstructorConsole() {
     setSocket(newSocket);
 
     newSocket.on('qr-update', (data) => {
-      // Ensure we only update if it's our session
-      setQrToken(data.qr);
+      // Get current sessionId from the startSession response (stored in a local variable or state)
+      // For now, we'll use a window variable or a more robust way would be a ref
+      if (window.currentSessionId === data.sessionId) {
+        setQrToken(data.qr);
+      }
     });
 
     return () => newSocket.close();
@@ -73,6 +76,7 @@ export default function InstructorConsole() {
             });
 
             if (res.data.sessionId) {
+              window.currentSessionId = res.data.sessionId;
               setSessionActive(true);
               setTimeLeft(120);
               // Join the room for this session
@@ -98,6 +102,7 @@ export default function InstructorConsole() {
   const stopSession = async () => {
     try {
       // await axios.post(`${BASE_URL}/api/qr/stop`, { sessionId: 'current' });
+      window.currentSessionId = null;
       setSessionActive(false);
       setTimeLeft(0);
       setQrToken('SESSION_ENDED');
