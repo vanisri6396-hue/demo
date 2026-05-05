@@ -117,6 +117,29 @@ export default function Signup() {
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
+                {/* Password Strength Indicator */}
+                {password && (
+                  <div className="mt-3 px-1">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Security Strength</span>
+                      <span className={`text-[9px] font-black uppercase tracking-widest ${
+                        password.length < 8 ? 'text-red-500' : 
+                        (/[A-Z]/.test(password) && /[0-9]/.test(password)) ? 'text-green-500' : 'text-orange-500'
+                      }`}>
+                        {password.length < 8 ? 'Too Short' : 
+                         (/[A-Z]/.test(password) && /[0-9]/.test(password) && /[!@#$%^&*]/.test(password)) ? 'Very Strong' :
+                         (/[A-Z]/.test(password) && /[0-9]/.test(password)) ? 'Strong' : 'Weak'}
+                      </span>
+                    </div>
+                    <div className="flex gap-1 h-1">
+                      <div className={`flex-1 rounded-full transition-all duration-500 ${password.length >= 1 ? (password.length < 8 ? 'bg-red-400' : 'bg-green-400') : 'bg-gray-100'}`}></div>
+                      <div className={`flex-1 rounded-full transition-all duration-500 ${password.length >= 8 && /[A-Z]/.test(password) ? 'bg-green-400' : 'bg-gray-100'}`}></div>
+                      <div className={`flex-1 rounded-full transition-all duration-500 ${password.length >= 8 && /[0-9]/.test(password) ? 'bg-green-400' : 'bg-gray-100'}`}></div>
+                      <div className={`flex-1 rounded-full transition-all duration-500 ${password.length >= 8 && /[!@#$%^&*]/.test(password) ? 'bg-green-400' : 'bg-gray-100'}`}></div>
+                    </div>
+                    <p className="text-[8px] text-gray-400 mt-2 font-medium italic">Use 8+ chars with uppercase, numbers & symbols</p>
+                  </div>
+                )}
               </div>
             </div>
 

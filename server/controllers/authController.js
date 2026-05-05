@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../middleware/authMiddleware");
+const { validatePassword } = require("../utils/validators");
 
 /* ─── REGISTER ──────────────────────────────────────────────────────── */
 exports.register = async (req, res) => {
@@ -15,6 +16,12 @@ exports.register = async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email and password are required ❌" });
+    }
+
+    // Password Strength Check
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.isValid) {
+      return res.status(400).json({ message: passwordCheck.message });
     }
 
     // Security: Check for faculty verification key if role is not student
@@ -140,6 +147,13 @@ exports.updateProfile = async (req, res) => {
 exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
+    
+    // Password Strength Check
+    const passwordCheck = validatePassword(newPassword);
+    if (!passwordCheck.isValid) {
+      return res.status(400).json({ message: passwordCheck.message });
+    }
+
     const user = await User.findById(req.user.id);
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);

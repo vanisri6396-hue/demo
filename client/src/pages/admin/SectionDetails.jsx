@@ -367,6 +367,25 @@ export default function SectionDetails() {
                   value={newStudent.password}
                   onChange={(e) => setNewStudent({...newStudent, password: e.target.value})}
                 />
+                {/* Password Strength Indicator */}
+                {newStudent.password && (
+                  <div className="mt-2 px-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Security</span>
+                      <span className={`text-[8px] font-bold uppercase tracking-widest ${
+                        newStudent.password.length < 8 ? 'text-red-500' : 
+                        (/[A-Z]/.test(newStudent.password) && /[0-9]/.test(newStudent.password)) ? 'text-green-500' : 'text-orange-500'
+                      }`}>
+                        {newStudent.password.length < 8 ? 'Weak' : 'Strong'}
+                      </span>
+                    </div>
+                    <div className="flex gap-1 h-1">
+                      <div className={`flex-1 rounded-full ${newStudent.password.length >= 1 ? (newStudent.password.length < 8 ? 'bg-red-400' : 'bg-green-400') : 'bg-gray-100'}`}></div>
+                      <div className={`flex-1 rounded-full ${newStudent.password.length >= 8 && /[A-Z]/.test(newStudent.password) ? 'bg-green-400' : 'bg-gray-100'}`}></div>
+                      <div className={`flex-1 rounded-full ${newStudent.password.length >= 8 && /[0-9]/.test(newStudent.password) ? 'bg-green-400' : 'bg-gray-100'}`}></div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button 

@@ -2,6 +2,7 @@ const User       = require("../models/User");
 const Class      = require("../models/Class");
 const Subject    = require("../models/Subject");
 const Attendance = require("../models/Attendance");
+const { validatePassword } = require("../utils/validators");
 
 /* ─── DASHBOARD ──────────────────────────────────────────────────────── */
 exports.getDashboard = async (req, res) => {
@@ -92,6 +93,12 @@ exports.createUser = async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email, password required ❌" });
+    }
+
+    // Password Strength Check
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.isValid) {
+      return res.status(400).json({ message: passwordCheck.message });
     }
 
     const exists = await User.findOne({ email: email.toLowerCase() });
