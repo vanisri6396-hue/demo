@@ -8,6 +8,7 @@ const qrSessionSchema = new mongoose.Schema(
 
     // QR token (rotates every 3-4 seconds)
     currentQR:  { type: String },
+    previousQR: { type: String },
     expiresAt:  { type: Date },           // session end time (startTime + 2 min)
 
     // Teacher GPS + radius

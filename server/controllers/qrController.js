@@ -28,6 +28,7 @@ function scheduleNextRotation(teacherId, sessionId) {
       if (!session || !session.isActive) return;
 
       const newQR = generateQR();
+      session.previousQR = session.currentQR;
       session.currentQR = newQR;
       await session.save();
 

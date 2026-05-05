@@ -24,11 +24,26 @@ exports.scanQR = async (req, res) => {
     const { lat, lng } = req.body;
     const studentId = req.body.studentId || req.user?.id;
 
-    if (!qr)       return res.status(400).json({ message: "QR code required ❌" });
-    if (!lat||!lng) return res.status(400).json({ message: "Location required ❌" });
+    console.log("🔍 [scanQR] Request:", { qr, lat, lng, studentId });
 
-    const session = await QRSession.findOne({ currentQR: qr, isActive: true });
-    if (!session) return res.status(400).json({ message: "Invalid or expired QR ❌" });
+    if (!qr) {
+      console.warn("⚠️ [scanQR] Missing QR code");
+      return res.status(400).json({ message: "QR code required ❌" });
+    }
+    if (lat === undefined || lng === undefined || lat === null || lng === null) {
+      console.warn("⚠️ [scanQR] Missing location coordinates:", { lat, lng });
+      return res.status(400).json({ message: "Location coordinates required ❌" });
+    }
+
+    const session = await QRSession.findOne({ 
+      $or: [{ currentQR: qr }, { previousQR: qr }], 
+      isActive: true 
+    });
+    
+    if (!session) {
+      console.warn("⚠️ [scanQR] No active session found for QR:", qr);
+      return res.status(400).json({ message: "Invalid or expired QR ❌" });
+    }
 
     const distance = getDistance(lat, lng, session.teacherLat, session.teacherLng);
 

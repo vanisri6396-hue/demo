@@ -70,8 +70,9 @@ export default function QRScanner() {
             headers: { Authorization: `Bearer ${token}` }
           });
 
-          setStatus({ type: 'success', message: res.data.message });
+          setStatus({ type: 'success', message: res.data.message || 'Attendance Marked ✅' });
         } catch (err) {
+          console.error('Scan API Error:', err.response?.data || err.message);
           setStatus({ 
             type: 'error', 
             message: err.response?.data?.message || 'Check-in failed. Try again.' 

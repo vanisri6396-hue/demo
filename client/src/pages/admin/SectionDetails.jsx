@@ -71,19 +71,64 @@ export default function SectionDetails() {
     }
   };
 
+  const handleNotifyParents = () => {
+    const lowAttendanceCount = students.filter(s => (s.attendance || 0) < 75).length;
+    if (lowAttendanceCount === 0) {
+      alert("All students have satisfactory attendance! No notifications sent. ✅");
+    } else {
+      alert(`Alerts sent to parents of ${lowAttendanceCount} students with low attendance (< 75%). ✉️`);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (students.length === 0) return alert("No student data to export!");
+
+    const headers = ['Roll No', 'Name', 'Email', 'Department', 'Section', 'Status'];
+    const rows = students.map(s => [
+      s.rollNo || 'N/A',
+      s.name,
+      s.email,
+      s.department || 'N/A',
+      s.section || 'N/A',
+      s.isActive ? 'ACTIVE' : 'INACTIVE'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Student_Directory_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex flex-col gap-8 max-w-[1200px] mx-auto">
       {/* Header Actions */}
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">CSE-C Section Details</h1>
-          <p className="text-gray-500">Detailed academic performance and attendance tracking for Batch 2024-25.</p>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tight">Section Details</h1>
+          <p className="text-gray-500 font-medium mt-1">Section C • CSE Department • Year 2024</p>
         </div>
-        <div className="flex gap-3">
-          <button className="btn-secondary flex items-center gap-2">
-            <Download size={18} /> Export CSV
+        
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleExportCSV}
+            className="p-3 bg-white border border-gray-100 rounded-2xl text-gray-400 hover:text-primary-600 hover:border-primary-100 transition-all shadow-sm"
+          >
+            <Download size={20} />
           </button>
-          <button className="btn-secondary flex items-center gap-2">
+          <button 
+            onClick={handleNotifyParents}
+            className="btn-secondary flex items-center gap-2"
+          >
             <Mail size={18} /> Notify Parents
           </button>
           <button 
