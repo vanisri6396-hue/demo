@@ -21,7 +21,7 @@ export default function Signup() {
   useEffect(() => {
     const fetchHierarchy = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/admin/hierarchy`);
+        const res = await axios.get(`${BASE_URL}/api/admin/hierarchy/public`);
         setHierarchy(res.data);
       } catch (err) {
         console.error("Failed to fetch university structure:", err);

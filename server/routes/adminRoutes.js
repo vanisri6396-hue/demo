@@ -5,6 +5,9 @@ const { verifyToken, allowRoles } = require("../middleware/authMiddleware");
 
 const adminOrAuthority = allowRoles("admin","authority","superadmin");
 
+// Public Hierarchy (for Signup/Login)
+router.get("/hierarchy/public", ctrl.getUniversityHierarchy);
+
 router.get("/dashboard",              verifyToken, adminOrAuthority, ctrl.getDashboard);
 router.get("/users",                  verifyToken, adminOrAuthority, ctrl.getAllUsers);
 router.post("/users",                 verifyToken, allowRoles("admin"), ctrl.createUser);
