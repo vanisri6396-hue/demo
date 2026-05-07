@@ -28,6 +28,11 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    
+    // Validation: Require School for all, Dept for others
+    if (!selectedSchool) return alert("Please select your School ⚠️");
+    if (loginRole !== 'dean' && !selectedDept) return alert("Please select your Department ⚠️");
+
     setLoading(true);
     try {
       const res = await axios.post(`${BASE_URL}/api/auth/login`, {
@@ -36,7 +41,7 @@ export default function Login() {
       });
 
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user || { role: res.data.role }));
+      localStorage.setItem("user", JSON.stringify(res.data.user || { role: res.data.role, schoolId: res.data.schoolId }));
       
       const role = res.data.role;
       if (role === "teacher") navigate("/teacher");

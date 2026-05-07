@@ -8,6 +8,17 @@ const adminOrAuthority = allowRoles("admin","authority","superadmin");
 // Public Hierarchy (for Signup/Login)
 router.get("/hierarchy/public", ctrl.getUniversityHierarchy);
 
+// Temporary cleanup route for old Dean accounts
+router.get("/cleanup-deans", verifyToken, allowRoles("admin", "superadmin"), async (req, res) => {
+  try {
+    const User = require("../models/User");
+    const result = await User.deleteMany({ role: "dean" });
+    res.json({ message: `Successfully removed ${result.deletedCount} old Dean accounts 🗑️` });
+  } catch (err) {
+    res.status(500).json({ message: "Cleanup failed", error: err.message });
+  }
+});
+
 router.get("/dashboard",              verifyToken, adminOrAuthority, ctrl.getDashboard);
 router.get("/users",                  verifyToken, adminOrAuthority, ctrl.getAllUsers);
 router.post("/users",                 verifyToken, allowRoles("admin"), ctrl.createUser);
