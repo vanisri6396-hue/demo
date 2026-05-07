@@ -38,9 +38,27 @@ const SchoolsPage = () => {
     s.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (loading) return (
+  const [seeding, setSeeding] = useState(false);
+
+  const handleSeed = async () => {
+    try {
+      setSeeding(true);
+      await axios.post(`${BASE_URL}/api/admin/seed-university`, {}, authHeader);
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert("Seeding failed ❌");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  if (loading || seeding) return (
     <div className="flex h-screen items-center justify-center bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+        <p className="text-gray-500 font-medium">{seeding ? "Initializing University Hierarchy..." : "Loading Schools..."}</p>
+      </div>
     </div>
   );
 
@@ -52,20 +70,22 @@ const SchoolsPage = () => {
           <p className="text-gray-500 mt-1">Manage and monitor all 13 academic schools of Takshashila University</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <LayoutGrid className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <ListIcon className="w-5 h-5" />
-            </button>
-          </div>
+          {hierarchy.length > 0 && (
+            <div className="flex bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+              <button 
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+              >
+                <ListIcon className="w-5 h-5" />
+              </button>
+            </div>
+          )}
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
@@ -86,13 +106,14 @@ const SchoolsPage = () => {
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">No Schools Found</h3>
           <p className="text-gray-500 max-w-sm text-center mb-8">
-            It looks like the university hierarchy hasn't been initialized yet. Please ensure the database is seeded with the school data.
+            The university hierarchy has not been initialized. Click below to automatically set up the 13 schools and their departments.
           </p>
           <button 
-            onClick={() => window.location.reload()}
-            className="btn-primary flex items-center gap-2"
+            onClick={handleSeed}
+            className="btn-primary flex items-center gap-2 px-8 py-3"
           >
-            Refresh Data
+            <Plus className="w-5 h-5" />
+            Initialize University Data
           </button>
         </div>
       ) : viewMode === 'grid' ? (

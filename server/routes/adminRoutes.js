@@ -15,5 +15,6 @@ router.get("/attendance/school/:schoolId", verifyToken, adminOrAuthority, ctrl.g
 router.get("/attendance/department/:deptId", verifyToken, adminOrAuthority, ctrl.getDepartmentAttendance);
 router.get("/attendance/class/:classId", verifyToken, adminOrAuthority, ctrl.getClassAttendance);
 router.get("/hierarchy", verifyToken, adminOrAuthority, ctrl.getUniversityHierarchy);
+router.post("/seed-university", verifyToken, allowRoles("admin"), ctrl.seedUniversityData);
 
 module.exports = router;
