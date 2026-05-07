@@ -32,6 +32,9 @@ export default function Signup() {
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    if (!extraData.schoolId || !extraData.departmentId) {
+      return alert("Please select your School and Department to continue! ⚠️");
+    }
     setLoading(true);
     try {
       await axios.post(`${BASE_URL}/api/auth/register`, {
@@ -74,33 +77,36 @@ export default function Signup() {
         <div className="glass-card p-10 bg-white/80 backdrop-blur-xl border-white shadow-2xl">
           <form onSubmit={handleSignup} className="space-y-6">
             {/* University Context */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-3xl border border-gray-100">
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Select School</label>
-                <select 
-                  required
-                  className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:border-primary-400 font-bold text-gray-700 appearance-none shadow-sm"
-                  value={extraData.schoolId}
-                  onChange={(e) => setExtraData({...extraData, schoolId: e.target.value, departmentId: ''})}
-                >
-                  <option value="">Select School</option>
-                  {hierarchy.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Select Department</label>
-                <select 
-                  required
-                  disabled={!extraData.schoolId}
-                  className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:border-primary-400 font-bold text-gray-700 appearance-none shadow-sm disabled:opacity-50"
-                  value={extraData.departmentId}
-                  onChange={(e) => setExtraData({...extraData, departmentId: e.target.value})}
-                >
-                  <option value="">Select Dept</option>
-                  {hierarchy.find(s => s._id === extraData.schoolId)?.departments.map(d => (
-                    <option key={d._id} value={d._id}>{d.name}</option>
-                  ))}
-                </select>
+            <div className="p-6 bg-gray-900 rounded-3xl border-none shadow-xl shadow-gray-200/50 space-y-4">
+              <h3 className="text-[10px] font-black text-primary-400 uppercase tracking-[0.3em] mb-4">Institutional Identity</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Select School</label>
+                  <select 
+                    required
+                    className="w-full px-4 py-3 bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-primary-500 font-bold text-white appearance-none transition-all"
+                    value={extraData.schoolId}
+                    onChange={(e) => setExtraData({...extraData, schoolId: e.target.value, departmentId: ''})}
+                  >
+                    <option value="">Choose School</option>
+                    {hierarchy.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Select Department</label>
+                  <select 
+                    required
+                    disabled={!extraData.schoolId}
+                    className="w-full px-4 py-3 bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-primary-500 font-bold text-white appearance-none transition-all disabled:opacity-30"
+                    value={extraData.departmentId}
+                    onChange={(e) => setExtraData({...extraData, departmentId: e.target.value})}
+                  >
+                    <option value="">Choose Dept</option>
+                    {hierarchy.find(s => s._id === extraData.schoolId)?.departments.map(d => (
+                      <option key={d._id} value={d._id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
