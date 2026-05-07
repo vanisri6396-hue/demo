@@ -10,6 +10,7 @@ export default function Login() {
   const [hierarchy, setHierarchy] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState("");
   const [selectedDept, setSelectedDept] = useState("");
+  const [loginRole, setLoginRole] = useState("student");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -82,33 +83,52 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">School</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Access Role</label>
                 <select 
-                  required
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 outline-none text-xs"
-                  value={selectedSchool}
-                  onChange={(e) => { setSelectedSchool(e.target.value); setSelectedDept(""); }}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-700 outline-none text-xs appearance-none"
+                  value={loginRole}
+                  onChange={(e) => setLoginRole(e.target.value)}
                 >
-                  <option value="">Select School</option>
-                  {hierarchy.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                  <option value="student">Student</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="dean">Dean / School Head</option>
+                  <option value="authority">HOD / Authority</option>
+                  <option value="admin">Administrator</option>
                 </select>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Department</label>
-                <select 
-                  required
-                  disabled={!selectedSchool}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 outline-none text-xs disabled:opacity-50"
-                  value={selectedDept}
-                  onChange={(e) => setSelectedDept(e.target.value)}
-                >
-                  <option value="">Select Dept</option>
-                  {hierarchy.find(s => s._id === selectedSchool)?.departments.map(d => (
-                    <option key={d._id} value={d._id}>{d.name}</option>
-                  ))}
-                </select>
+
+              <div className={`grid ${loginRole !== 'dean' ? 'grid-cols-2' : 'grid-cols-1'} gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100`}>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">School</label>
+                  <select 
+                    required
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 outline-none text-xs"
+                    value={selectedSchool}
+                    onChange={(e) => { setSelectedSchool(e.target.value); setSelectedDept(""); }}
+                  >
+                    <option value="">Select School</option>
+                    {hierarchy.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                  </select>
+                </div>
+                {loginRole !== 'dean' && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Department</label>
+                    <select 
+                      required
+                      disabled={!selectedSchool}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 outline-none text-xs disabled:opacity-50"
+                      value={selectedDept}
+                      onChange={(e) => setSelectedDept(e.target.value)}
+                    >
+                      <option value="">Select Dept</option>
+                      {hierarchy.find(s => s._id === selectedSchool)?.departments.map(d => (
+                        <option key={d._id} value={d._id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
 

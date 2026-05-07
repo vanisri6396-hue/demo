@@ -32,8 +32,15 @@ export default function Signup() {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    if (!extraData.schoolId || !extraData.departmentId) {
-      return alert("Please select your School and Department to continue! ⚠️");
+    
+    // Check if school is selected (Required for all)
+    if (!extraData.schoolId) {
+      return alert("Please select your School to continue! ⚠️");
+    }
+
+    // Check if department is selected (Required for all EXCEPT Dean)
+    if (role !== 'dean' && !extraData.departmentId) {
+      return alert("Please select your Department to continue! ⚠️");
     }
     setLoading(true);
     try {
@@ -79,7 +86,7 @@ export default function Signup() {
             {/* University Context */}
             <div className="p-6 bg-gray-900 rounded-3xl border-none shadow-xl shadow-gray-200/50 space-y-4">
               <h3 className="text-[10px] font-black text-primary-400 uppercase tracking-[0.3em] mb-4">Institutional Identity</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`grid grid-cols-1 ${role !== 'dean' ? 'md:grid-cols-2' : ''} gap-4`}>
                 <div>
                   <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Select School</label>
                   <select 
@@ -92,21 +99,23 @@ export default function Signup() {
                     {hierarchy.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Select Department</label>
-                  <select 
-                    required
-                    disabled={!extraData.schoolId}
-                    className="w-full px-4 py-3 bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-primary-500 font-bold text-white appearance-none transition-all disabled:opacity-30"
-                    value={extraData.departmentId}
-                    onChange={(e) => setExtraData({...extraData, departmentId: e.target.value})}
-                  >
-                    <option value="">Choose Dept</option>
-                    {hierarchy.find(s => s._id === extraData.schoolId)?.departments.map(d => (
-                      <option key={d._id} value={d._id}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
+                {role !== 'dean' && (
+                  <div>
+                    <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Select Department</label>
+                    <select 
+                      required
+                      disabled={!extraData.schoolId}
+                      className="w-full px-4 py-3 bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-primary-500 font-bold text-white appearance-none transition-all disabled:opacity-30"
+                      value={extraData.departmentId}
+                      onChange={(e) => setExtraData({...extraData, departmentId: e.target.value})}
+                    >
+                      <option value="">Choose Dept</option>
+                      {hierarchy.find(s => s._id === extraData.schoolId)?.departments.map(d => (
+                        <option key={d._id} value={d._id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
 
