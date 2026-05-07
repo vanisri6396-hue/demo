@@ -41,7 +41,17 @@ export default function Login() {
       });
 
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user || { role: res.data.role, schoolId: res.data.schoolId }));
+      
+      // Save full user context for dashboards
+      const userContext = {
+        role: res.data.role,
+        name: res.data.name,
+        email: res.data.email,
+        schoolId: res.data.schoolId,
+        departmentId: res.data.departmentId,
+        userId: res.data.userId
+      };
+      localStorage.setItem("user", JSON.stringify(userContext));
       
       const role = res.data.role;
       if (role === "teacher") navigate("/teacher");
