@@ -2,15 +2,15 @@ const Timetable = require('../models/Timetable');
 
 exports.updateTimetable = async (req, res) => {
   try {
-    const { day, slots, section } = req.body;
+    const { day, slots, section, schoolId, departmentId } = req.body;
     
-    let timetable = await Timetable.findOne({ day, section });
+    let timetable = await Timetable.findOne({ day, section, schoolId, departmentId });
     
     if (timetable) {
       timetable.slots = slots;
       await timetable.save();
     } else {
-      timetable = await Timetable.create({ day, slots, section });
+      timetable = await Timetable.create({ day, slots, section, schoolId, departmentId });
     }
     
     res.json({ message: 'Timetable updated successfully ✅', timetable });
@@ -19,10 +19,15 @@ exports.updateTimetable = async (req, res) => {
   }
 };
 
-exports.getTimetableBySection = async (req, res) => {
+exports.getTimetableByHierarchy = async (req, res) => {
   try {
-    const { section } = req.params;
-    const timetable = await Timetable.find({ section }).sort({ day: 1 });
+    const { schoolId, departmentId, section } = req.query;
+    const query = {};
+    if (schoolId) query.schoolId = schoolId;
+    if (departmentId) query.departmentId = departmentId;
+    if (section) query.section = section;
+
+    const timetable = await Timetable.find(query).sort({ day: 1 });
     res.json(timetable);
   } catch (err) {
     res.status(500).json({ message: err.message });

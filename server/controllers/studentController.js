@@ -110,7 +110,14 @@ exports.getDashboardData = async (req, res) => {
     // 2. Upcoming Classes
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const today = days[new Date().getDay()];
-    const timetable = await Timetable.findOne({ day: today, section: student.section || 'A' });
+    
+    // Find timetable for student's specific school, dept, and section
+    const timetable = await Timetable.findOne({ 
+      day: today, 
+      schoolId: student.schoolId,
+      departmentId: student.departmentId,
+      section: student.section || 'A' 
+    });
     
     // Filter for future classes (approx based on hour for now)
     const currentHour = new Date().getHours();

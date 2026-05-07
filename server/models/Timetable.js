@@ -1,11 +1,14 @@
 const mongoose = require('mongoose');
 
 const timetableSchema = new mongoose.Schema({
-  school: { type: String, default: 'Computational Engineering' },
-  program: { type: String, default: 'B.Tech CSE (AIML-A)' },
-  batch: { type: String, default: '2024-2028' },
-  semester: { type: String, default: 'IV' },
-  section: { type: String, default: 'A' },
+  schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
+  departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
+  
+  school: { type: String },
+  program: { type: String },
+  batch: { type: String },
+  semester: { type: String },
+  section: { type: String, required: true },
   
   day: { 
     type: String, 

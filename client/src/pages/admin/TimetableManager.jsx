@@ -17,16 +17,34 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const HOURS = [1, 2, 3, 4, 5, 6];
 
 export default function TimetableManager() {
-  const [section, setSection] = useState('CSE-A');
+  const [hierarchy, setHierarchy] = useState([]);
+  const [selectedSchool, setSelectedSchool] = useState('');
+  const [selectedDept, setSelectedDept] = useState('');
+  const [section, setSection] = useState('A');
   const [timetableData, setTimetableData] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingSlot, setEditingSlot] = useState(null);
 
+  const fetchHierarchy = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${BASE_URL}/api/admin/hierarchy`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHierarchy(res.data);
+    } catch (err) {
+      console.error("Hierarchy fetch error:", err);
+    }
+  };
+
   const fetchTimetable = async () => {
+    if (!selectedSchool || !selectedDept || !section) return;
     setLoading(true);
     try {
-      const res = await axios.get(`${BASE_URL}/api/timetable/section/${section}`);
+      const res = await axios.get(`${BASE_URL}/api/timetable/filter`, {
+        params: { schoolId: selectedSchool, departmentId: selectedDept, section }
+      });
       const mapped = {};
       res.data.forEach(dayDoc => {
         mapped[dayDoc.day] = dayDoc.slots;
@@ -40,8 +58,12 @@ export default function TimetableManager() {
   };
 
   useEffect(() => {
+    fetchHierarchy();
+  }, []);
+
+  useEffect(() => {
     fetchTimetable();
-  }, [section]);
+  }, [selectedSchool, selectedDept, section]);
 
   const handleUpdateSlot = async (e) => {
     e.preventDefault();
@@ -71,6 +93,8 @@ export default function TimetableManager() {
       for (const day of DAYS) {
         if (timetableData[day]) {
           await axios.post(`${BASE_URL}/api/timetable/update`, {
+            schoolId: selectedSchool,
+            departmentId: selectedDept,
             section,
             day,
             slots: timetableData[day]
@@ -95,22 +119,42 @@ export default function TimetableManager() {
           </h1>
           <p className="text-gray-500 font-medium mt-1">Configure section-wise weekly schedule (Max 6 hours/day).</p>
         </div>
-        <div className="flex items-center gap-4 w-full lg:w-auto">
+        <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
           <select 
-            value={section} 
-            onChange={(e) => setSection(e.target.value)}
-            className="px-6 py-4 bg-white border-2 border-gray-100 rounded-2xl font-black text-gray-700 outline-none focus:border-primary-400"
+            value={selectedSchool} 
+            onChange={(e) => setSelectedSchool(e.target.value)}
+            className="px-4 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 outline-none focus:border-primary-400 text-sm shadow-sm"
           >
-            <option value="CSE-A">CSE-A</option>
-            <option value="CSE-B">CSE-B</option>
-            <option value="ECE-A">ECE-A</option>
+            <option value="">Select School</option>
+            {hierarchy.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
           </select>
+
+          <select 
+            value={selectedDept} 
+            disabled={!selectedSchool}
+            onChange={(e) => setSelectedDept(e.target.value)}
+            className="px-4 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 outline-none focus:border-primary-400 text-sm shadow-sm disabled:opacity-50"
+          >
+            <option value="">Select Dept</option>
+            {hierarchy.find(s => s._id === selectedSchool)?.departments.map(d => (
+              <option key={d._id} value={d._id}>{d.name}</option>
+            ))}
+          </select>
+
+          <input 
+            type="text"
+            value={section}
+            placeholder="Section (e.g. A)"
+            onChange={(e) => setSection(e.target.value.toUpperCase())}
+            className="w-32 px-4 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 outline-none focus:border-primary-400 text-sm shadow-sm"
+          />
+
           <button 
             onClick={saveToBackend}
-            disabled={saving}
-            className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-black transition-all shadow-xl"
+            disabled={saving || !selectedSchool || !selectedDept || !section}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-black transition-all shadow-lg disabled:opacity-50"
           >
-            {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />} Save Changes
+            {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Save
           </button>
         </div>
       </div>
