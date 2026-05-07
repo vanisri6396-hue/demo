@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Building2, Users, GraduationCap, ChevronRight, Search, 
-  Filter, LayoutGrid, List as ListIcon, ArrowUpRight
+  Filter, LayoutGrid, List as ListIcon, ArrowUpRight, Plus
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BASE_URL } from '../../config';
