@@ -9,10 +9,12 @@ import {
 
 export default function SectionDetails() {
   const [students, setStudents] = useState([]);
+  const [hierarchy, setHierarchy] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newStudent, setNewStudent] = useState({
-    name: '', email: '', password: '', rollNo: '', department: 'CSE', section: 'C', role: 'student'
+    name: '', email: '', password: '', rollNo: '', 
+    schoolId: '', departmentId: '', section: '', role: 'student'
   });
   const [stats, setStats] = useState([
     { label: 'TOTAL STUDENTS', value: '0', sub: 'Loading...', icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
@@ -25,16 +27,20 @@ export default function SectionDetails() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const [usersRes, dashRes] = await Promise.all([
+      const [usersRes, dashRes, hierarchyRes] = await Promise.all([
         axios.get(`${BASE_URL}/api/admin/users?role=student`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
         axios.get(`${BASE_URL}/api/admin/dashboard`, {
           headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${BASE_URL}/api/admin/hierarchy`, {
+          headers: { Authorization: `Bearer ${token}` }
         })
       ]);
 
       setStudents(usersRes.data.users || []);
+      setHierarchy(hierarchyRes.data || []);
       
       const d = dashRes.data;
       setStats([
@@ -57,13 +63,16 @@ export default function SectionDetails() {
 
   const handleCreateStudent = async (e) => {
     e.preventDefault();
+    if (!newStudent.schoolId || !newStudent.departmentId) {
+      return alert("Please select School and Department! ⚠️");
+    }
     try {
       const token = localStorage.getItem('token');
       await axios.post(`${BASE_URL}/api/admin/users`, newStudent, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowModal(false);
-      setNewStudent({ name: '', email: '', password: '', rollNo: '', department: 'CSE', section: 'C', role: 'student' });
+      setNewStudent({ name: '', email: '', password: '', rollNo: '', schoolId: '', departmentId: '', section: '', role: 'student' });
       fetchData(); // Refresh list
       alert('Student created successfully! ✅');
     } catch (err) {
@@ -302,8 +311,6 @@ export default function SectionDetails() {
                 <h2 className="text-2xl font-black text-gray-900">Add New Student</h2>
                 <p className="text-gray-500 text-sm font-medium">Create a student record in MongoDB</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                <XCircle size={24} />
               </button>
             </div>
             
@@ -318,6 +325,38 @@ export default function SectionDetails() {
                   value={newStudent.name}
                   onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">School</label>
+                  <select 
+                    required
+                    className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all appearance-none"
+                    value={newStudent.schoolId}
+                    onChange={(e) => setNewStudent({...newStudent, schoolId: e.target.value, departmentId: ''})}
+                  >
+                    <option value="">Select School</option>
+                    {hierarchy.map(school => (
+                      <option key={school._id} value={school._id}>{school.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Department</label>
+                  <select 
+                    required
+                    disabled={!newStudent.schoolId}
+                    className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all appearance-none disabled:opacity-50"
+                    value={newStudent.departmentId}
+                    onChange={(e) => setNewStudent({...newStudent, departmentId: e.target.value})}
+                  >
+                    <option value="">Select Dept</option>
+                    {hierarchy.find(s => s._id === newStudent.schoolId)?.departments.map(dept => (
+                      <option key={dept._id} value={dept._id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -343,7 +382,7 @@ export default function SectionDetails() {
                     onChange={(e) => setNewStudent({...newStudent, section: e.target.value})}
                   />
                 </div>
-              </div>
+              </div>            </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Email Address</label>

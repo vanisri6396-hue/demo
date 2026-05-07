@@ -18,10 +18,12 @@ import {
 
 export default function FacultyManager() {
   const [faculty, setFaculty] = useState([]);
+  const [hierarchy, setHierarchy] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newFaculty, setNewFaculty] = useState({
-    name: '', email: '', password: '', employeeId: '', department: 'CSE', role: 'teacher'
+    name: '', email: '', password: '', employeeId: '', 
+    schoolId: '', departmentId: '', role: 'teacher'
   });
   const [summary, setSummary] = useState({ total: 0, active: 0 });
 
@@ -29,11 +31,18 @@ export default function FacultyManager() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res = await axios.get(`${BASE_URL}/api/admin/users?role=teacher`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const users = res.data.users || [];
+      const [usersRes, hierarchyRes] = await Promise.all([
+        axios.get(`${BASE_URL}/api/admin/users?role=teacher`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${BASE_URL}/api/admin/hierarchy`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      const users = usersRes.data.users || [];
       setFaculty(users);
+      setHierarchy(hierarchyRes.data || []);
       setSummary({
         total: users.length,
         active: users.filter(u => u.isActive).length
@@ -51,13 +60,16 @@ export default function FacultyManager() {
 
   const handleCreateFaculty = async (e) => {
     e.preventDefault();
+    if (!newFaculty.schoolId || !newFaculty.departmentId) {
+      return alert("Please select School and Department! ⚠️");
+    }
     try {
       const token = localStorage.getItem('token');
       await axios.post(`${BASE_URL}/api/admin/users`, newFaculty, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowModal(false);
-      setNewFaculty({ name: '', email: '', password: '', employeeId: '', department: 'CSE', role: 'teacher' });
+      setNewFaculty({ name: '', email: '', password: '', employeeId: '', schoolId: '', departmentId: '', role: 'teacher' });
       fetchData();
       alert('Faculty member added successfully! ✅');
     } catch (err) {
@@ -198,27 +210,46 @@ export default function FacultyManager() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Employee ID</label>
-                  <input 
-                    type="text" 
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">School</label>
+                  <select 
                     required
-                    placeholder="FAC-2024-001"
-                    className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all"
-                    value={newFaculty.employeeId}
-                    onChange={(e) => setNewFaculty({...newFaculty, employeeId: e.target.value})}
-                  />
+                    className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all appearance-none"
+                    value={newFaculty.schoolId}
+                    onChange={(e) => setNewFaculty({...newFaculty, schoolId: e.target.value, departmentId: ''})}
+                  >
+                    <option value="">Select School</option>
+                    {hierarchy.map(school => (
+                      <option key={school._id} value={school._id}>{school.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Department</label>
-                  <input 
-                    type="text" 
+                  <select 
                     required
-                    placeholder="CSE"
-                    className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all"
-                    value={newFaculty.department}
-                    onChange={(e) => setNewFaculty({...newFaculty, department: e.target.value})}
-                  />
+                    disabled={!newFaculty.schoolId}
+                    className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all appearance-none disabled:opacity-50"
+                    value={newFaculty.departmentId}
+                    onChange={(e) => setNewFaculty({...newFaculty, departmentId: e.target.value})}
+                  >
+                    <option value="">Select Dept</option>
+                    {hierarchy.find(s => s._id === newFaculty.schoolId)?.departments.map(dept => (
+                      <option key={dept._id} value={dept._id}>{dept.name}</option>
+                    ))}
+                  </select>
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Employee ID</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="FAC-2024-001"
+                  className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all"
+                  value={newFaculty.employeeId}
+                  onChange={(e) => setNewFaculty({...newFaculty, employeeId: e.target.value})}
+                />
               </div>
 
               <div className="space-y-1.5">
