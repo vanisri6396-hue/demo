@@ -85,7 +85,7 @@ const universityData = [
     ]
   },
   {
-    name: "School of Social Sciences",
+    name: "School of Social Studies",
     code: "SSS",
     departments: [
       { name: "Defense & Strategic Studies", code: "DSS", programs: ["B.A Defense and Strategic Studies"] },

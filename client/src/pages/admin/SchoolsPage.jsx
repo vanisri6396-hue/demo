@@ -79,7 +79,23 @@ const SchoolsPage = () => {
         </div>
       </div>
 
-      {viewMode === 'grid' ? (
+      {filteredSchools.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+          <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+            <Building2 className="w-10 h-10 text-gray-300" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">No Schools Found</h3>
+          <p className="text-gray-500 max-w-sm text-center mb-8">
+            It looks like the university hierarchy hasn't been initialized yet. Please ensure the database is seeded with the school data.
+          </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="btn-primary flex items-center gap-2"
+          >
+            Refresh Data
+          </button>
+        </div>
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredSchools.map((school, idx) => (
             <motion.div
@@ -104,7 +120,7 @@ const SchoolsPage = () => {
               <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
                 <div className="flex items-center gap-1.5">
                   <Users className="w-4 h-4" />
-                  <span>{school.departments.length} Depts</span>
+                  <span>{school.departments?.length || 0} Depts</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <GraduationCap className="w-4 h-4" />
@@ -141,7 +157,7 @@ const SchoolsPage = () => {
                     <p className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{school.name}</p>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{school.code}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{school.departments.length} Departments</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{school.departments?.length || 0} Departments</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">

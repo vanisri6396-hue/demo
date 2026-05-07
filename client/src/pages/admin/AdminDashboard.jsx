@@ -138,7 +138,11 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
-              {hierarchy.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((school) => (
+              {hierarchy.length === 0 ? (
+                <div className="p-10 text-center text-gray-400 italic">
+                  No schools initialized in the system.
+                </div>
+              ) : hierarchy.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((school) => (
                 <div 
                   key={school._id} 
                   onClick={() => navigate(`/admin/school/${school._id}`)}
