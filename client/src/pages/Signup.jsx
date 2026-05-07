@@ -228,7 +228,7 @@ export default function Signup() {
               </div>
             )}
 
-            {(role === 'teacher' || role === 'classIncharge' || role === 'authority' || role === 'admin') && (
+            {(role === 'teacher' || role === 'classIncharge' || role === 'authority' || role === 'admin' || role === 'dean') && (
               <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 animate-in slide-in-from-top-4 duration-500 space-y-4">
                 <div>
                   <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2 ml-1">Employee ID / Faculty ID</label>
