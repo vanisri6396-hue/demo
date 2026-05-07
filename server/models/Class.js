@@ -7,7 +7,8 @@ const classSchema = new mongoose.Schema(
     section:      { type: String, required: true },             // e.g. "C"
     year:         { type: Number, required: true },             // 1-4
     semester:     { type: Number, required: true },             // 1-8
-    classIncharge:{ type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "School", required: true },
+    departmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Department", required: true },
     students:     [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
   },
   { timestamps: true }

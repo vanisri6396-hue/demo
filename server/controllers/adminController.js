@@ -2,6 +2,8 @@ const User       = require("../models/User");
 const Class      = require("../models/Class");
 const Subject    = require("../models/Subject");
 const Attendance = require("../models/Attendance");
+const School     = require("../models/School");
+const Department = require("../models/Department");
 const { validatePassword } = require("../utils/validators");
 
 /* ─── DASHBOARD ──────────────────────────────────────────────────────── */
@@ -89,7 +91,8 @@ exports.createUser = async (req, res) => {
   try {
     const bcrypt = require("bcryptjs");
     const { name, email, password, role, rollNo, employeeId,
-            department, section, year, semester, phone } = req.body;
+            department, section, year, semester, phone,
+            schoolId, departmentId } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email, password required ❌" });
@@ -110,7 +113,9 @@ exports.createUser = async (req, res) => {
       role: role || "student",
       rollNo: rollNo || "", employeeId: employeeId || "",
       department: department || "", section: section || "",
-      year: year || 1, semester: semester || 1, phone: phone || ""
+      year: year || 1, semester: semester || 1, phone: phone || "",
+      schoolId: schoolId || null,
+      departmentId: departmentId || null
     });
 
     res.status(201).json({ message: "User created ✅", userId: user._id });
@@ -164,5 +169,120 @@ exports.getAttendanceReport = async (req, res) => {
     res.json({ records, total: records.length });
   } catch (err) {
     res.status(500).json({ message: "Report failed ❌" });
+  }
+};
+
+/* ─── UNIVERSITY HIERARCHY ───────────────────────────────────────────── */
+exports.getUniversityHierarchy = async (req, res) => {
+  try {
+    const schools = await School.find().populate("departments");
+    res.json(schools);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch hierarchy ❌" });
+  }
+};
+
+/* ─── SCHOOL ATTENDANCE ─────────────────────────────────────────────── */
+exports.getSchoolAttendance = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+    const { date } = req.query; // Expected YYYY-MM-DD
+    const targetDate = date || new Date().toISOString().split("T")[0];
+
+    // Find all classes in this school
+    const classes = await Class.find({ schoolId });
+    const classIds = classes.map(c => c._id);
+
+    // Aggregate attendance for these classes
+    const stats = await Attendance.aggregate([
+      { $match: { classId: { $in: classIds }, date: targetDate } },
+      { $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+      }}
+    ]);
+
+    // Department contribution
+    const deptContribution = await Attendance.aggregate([
+      { $match: { classId: { $in: classIds }, date: targetDate } },
+      { $lookup: {
+          from: "classes",
+          localField: "classId",
+          foreignField: "_id",
+          as: "classInfo"
+      }},
+      { $unwind: "$classInfo" },
+      { $group: {
+          _id: "$classInfo.department",
+          present: { $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] } },
+          total: { $sum: 1 }
+      }},
+      { $project: {
+          department: "$_id",
+          present: 1,
+          total: 1,
+          percentage: { $cond: [{ $eq: ["$total", 0] }, 0, { $multiply: [{ $divide: ["$present", "$total"] }, 100] }] }
+      }}
+    ]);
+
+    res.json({ stats, deptContribution });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch school attendance ❌" });
+  }
+};
+
+/* ─── DEPARTMENT ATTENDANCE ─────────────────────────────────────────── */
+exports.getDepartmentAttendance = async (req, res) => {
+  try {
+    const { deptId } = req.params;
+    const { date } = req.query;
+    const targetDate = date || new Date().toISOString().split("T")[0];
+
+    const classes = await Class.find({ departmentId: deptId });
+    const classIds = classes.map(c => c._id);
+
+    const sectionStats = await Attendance.aggregate([
+      { $match: { classId: { $in: classIds }, date: targetDate } },
+      { $lookup: {
+          from: "classes",
+          localField: "classId",
+          foreignField: "_id",
+          as: "classInfo"
+      }},
+      { $unwind: "$classInfo" },
+      { $group: {
+          _id: "$classInfo.name",
+          present: { $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] } },
+          total: { $sum: 1 }
+      }},
+      { $project: {
+          section: "$_id",
+          present: 1,
+          total: 1,
+          percentage: { $cond: [{ $eq: ["$total", 0] }, 0, { $multiply: [{ $divide: ["$present", "$total"] }, 100] }] }
+      }}
+    ]);
+
+    res.json(sectionStats);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch department attendance ❌" });
+  }
+};
+
+/* ─── CLASS ATTENDANCE ─────────────────────────────────────────────── */
+exports.getClassAttendance = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { date } = req.query;
+    const targetDate = date || new Date().toISOString().split("T")[0];
+
+    const records = await Attendance.find({ classId, date: targetDate })
+      .populate("studentId", "name rollNo")
+      .sort({ timestamp: -1 });
+
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch class attendance ❌" });
   }
 };

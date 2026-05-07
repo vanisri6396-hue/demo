@@ -27,7 +27,9 @@ import FacultyManager from "./pages/hod/FacultyManager";
 import HODStatistics from "./pages/hod/HODStatistics";
 import AuditLogs from "./pages/hod/AuditLogs";
 import InchargeDashboard from "./pages/teacher/InchargeDashboard";
-import TeacherTimetable from "./pages/teacher/TeacherTimetable";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import SchoolDashboard from "./pages/admin/SchoolDashboard";
+import DepartmentDashboard from "./pages/admin/DepartmentDashboard";
 
 // A simple protected route wrapper (can be expanded later with real auth checks)
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -71,15 +73,17 @@ export default function App() {
         {/* Admin Routes */}
         <Route path="/admin" element={
           <ProtectedRoute allowedRole="admin">
-            <DashboardLayout role="admin" title="Takshashila Admin" subtitle="Admin Portal" />
+            <DashboardLayout role="admin" title="Takshashila Admin" subtitle="University Portal" />
           </ProtectedRoute>
         }>
-          <Route index element={<SectionDetails />} />
+          <Route index element={<AdminDashboard />} />
+          <Route path="school/:schoolId" element={<SchoolDashboard />} />
+          <Route path="department/:deptId" element={<DepartmentDashboard />} />
           <Route path="students" element={<SectionDetails />} />
           <Route path="students/:id" element={<StudentProfile />} />
           <Route path="faculty" element={<FacultyManager />} />
           <Route path="timetable" element={<TimetableManager />} />
-          <Route path="analytics" element={<HODStatistics />} />
+          <Route path="analytics" element={<AdminDashboard />} />
           <Route path="events" element={<EventManager />} />
           <Route path="settings" element={<Settings />} />
         </Route>

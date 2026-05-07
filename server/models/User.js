@@ -13,9 +13,12 @@ const userSchema = new mongoose.Schema(
     // student | teacher | classIncharge | authority | admin
     role: {
       type: String,
-      enum: ["student", "teacher", "classIncharge", "authority", "admin"],
+      enum: ["student", "teacher", "classIncharge", "authority", "admin", "superadmin"],
       default: "student"
     },
+    // ── Hierarchy links ────────────────────────
+    schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "School", default: null },
+    departmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Department", default: null },
 
     // ── Student-specific ─────────────────────────────
     rollNo:     { type: String, default: "" },
