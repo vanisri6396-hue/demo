@@ -31,6 +31,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import SchoolDashboard from "./pages/admin/SchoolDashboard";
 import DepartmentDashboard from "./pages/admin/DepartmentDashboard";
 import SchoolsPage from "./pages/admin/SchoolsPage";
+import DeanDashboard from "./pages/dean/DeanDashboard";
 
 // A simple protected route wrapper (can be expanded later with real auth checks)
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -121,6 +122,17 @@ export default function App() {
           <Route path="reports" element={<MonthlyReport />} />
           <Route path="settings" element={<Settings />} />
           <Route index element={<ApprovalDashboard />} />
+        </Route>
+ 
+        {/* Dean Routes */}
+        <Route path="/dean" element={
+          <ProtectedRoute allowedRole="dean">
+            <DashboardLayout role="dean" title="School Administration" subtitle="Office of the Dean" />
+          </ProtectedRoute>
+        }>
+          <Route index element={<DeanDashboard />} />
+          <Route path="statistics" element={<DeanDashboard />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Class Incharge Routes */}

@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema(
     // student | teacher | classIncharge | authority | admin
     role: {
       type: String,
-      enum: ["student", "teacher", "classIncharge", "authority", "admin", "superadmin"],
+      enum: ["student", "teacher", "classIncharge", "authority", "dean", "admin", "superadmin"],
       default: "student"
     },
     // ── Hierarchy links ────────────────────────

@@ -45,12 +45,19 @@ const navConfig = {
     { title: 'Dashboard', path: '/invigilator', icon: LayoutDashboard },
     { title: 'Exam Schedule', path: '/invigilator/schedule', icon: Calendar },
     { title: 'Reports', path: '/invigilator/reports', icon: BarChart3 },
+  ],
+  dean: [
+    { title: 'School Overview', path: '/dean', icon: LayoutDashboard },
+    { title: 'Departments', path: '/dean/statistics', icon: Building2 },
+    { title: 'Faculty', path: '/dean/statistics', icon: UserSquare },
+    { title: 'Statistics', path: '/dean/statistics', icon: BarChart3 },
   ]
 };
 
 const getPortalDetails = (role) => {
   switch(role) {
     case 'admin': return { title: 'Takshashila', subtitle: 'Admin Portal' };
+    case 'dean': return { title: 'Takshashila', subtitle: 'Dean Portal' };
     case 'authority': return { title: 'Takshashila', subtitle: 'HOD Portal' };
     case 'student': return { title: 'Academia', subtitle: 'Student Portal' };
     case 'teacher': return { title: 'Takshashila', subtitle: 'Academic Portal' };
@@ -117,7 +124,7 @@ export default function Sidebar({ role = 'student' }) {
             Quick Scan
           </button>
         )}
-        {(role === 'admin' || role === 'authority' || role === 'teacher') && (
+        {(role === 'admin' || role === 'authority' || role === 'teacher' || role === 'dean') && (
           <button className="btn-primary w-full flex items-center justify-center gap-2">
             {role === 'teacher' ? 'Start Session' : 'Generate Report'}
           </button>

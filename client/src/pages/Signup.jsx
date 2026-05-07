@@ -136,6 +136,7 @@ export default function Signup() {
                     <option value="student">Student</option>
                     <option value="teacher">Teacher</option>
                     <option value="classIncharge">Class Incharge</option>
+                    <option value="dean">Dean / School Head</option>
                     <option value="authority">Authority/HOD</option>
                     <option value="admin">Administrator</option>
                   </select>
