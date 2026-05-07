@@ -39,13 +39,17 @@ exports.register = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
+    // Sanitize school/department IDs (convert empty strings to null to avoid cast errors)
+    const sanitizedSchoolId = (schoolId && schoolId.trim() !== "") ? schoolId : null;
+    const sanitizedDeptId = (departmentId && departmentId.trim() !== "") ? departmentId : null;
+
     const user = await User.create({
       name,
       email: email.toLowerCase(),
       password: hashed,
       role: role || "student",
-      schoolId,
-      departmentId,
+      schoolId: sanitizedSchoolId,
+      departmentId: sanitizedDeptId,
       rollNo:     rollNo     || "",
       employeeId: employeeId || "",
       department: department || "",
@@ -59,7 +63,10 @@ exports.register = async (req, res) => {
 
   } catch (err) {
     console.error("Register error:", err);
-    res.status(500).json({ message: "Registration failed ❌" });
+    res.status(500).json({ 
+      message: "Registration failed ❌", 
+      error: err.message 
+    });
   }
 };
 

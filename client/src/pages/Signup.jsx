@@ -44,13 +44,21 @@ export default function Signup() {
     }
     setLoading(true);
     try {
-      await axios.post(`${BASE_URL}/api/auth/register`, {
+      // Clean up the payload: convert empty strings to null or remove them
+      const payload = {
         name,
         email,
         password,
         role,
-        ...extraData
-      });
+        schoolId: extraData.schoolId || null,
+        departmentId: role === 'dean' ? null : (extraData.departmentId || null),
+        rollNo: extraData.rollNo || "",
+        section: extraData.section || "",
+        employeeId: extraData.employeeId || "",
+        verificationKey: extraData.verificationKey || ""
+      };
+
+      await axios.post(`${BASE_URL}/api/auth/register`, payload);
 
       alert("Account created successfully ✅");
       navigate("/");
