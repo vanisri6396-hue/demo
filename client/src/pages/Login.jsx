@@ -7,8 +7,23 @@ import { LogIn, Mail, Lock, ArrowRight } from "lucide-react";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [hierarchy, setHierarchy] = useState([]);
+  const [selectedSchool, setSelectedSchool] = useState("");
+  const [selectedDept, setSelectedDept] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchHierarchy = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/api/admin/hierarchy`);
+        setHierarchy(res.data);
+      } catch (err) {
+        console.error("Hierarchy fetch error:", err);
+      }
+    };
+    fetchHierarchy();
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -66,6 +81,36 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">School</label>
+                <select 
+                  required
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 outline-none text-xs"
+                  value={selectedSchool}
+                  onChange={(e) => { setSelectedSchool(e.target.value); setSelectedDept(""); }}
+                >
+                  <option value="">Select School</option>
+                  {hierarchy.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Department</label>
+                <select 
+                  required
+                  disabled={!selectedSchool}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 outline-none text-xs disabled:opacity-50"
+                  value={selectedDept}
+                  onChange={(e) => setSelectedDept(e.target.value)}
+                >
+                  <option value="">Select Dept</option>
+                  {hierarchy.find(s => s._id === selectedSchool)?.departments.map(d => (
+                    <option key={d._id} value={d._id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div>
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
               <div className="relative">

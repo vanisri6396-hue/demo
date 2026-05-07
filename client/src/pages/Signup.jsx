@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../config";
@@ -9,10 +9,26 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
-  const [extraData, setExtraData] = useState({ rollNo: '', section: '', department: '', employeeId: '' });
+  const [hierarchy, setHierarchy] = useState([]);
+  const [extraData, setExtraData] = useState({ 
+    rollNo: '', section: '', department: '', 
+    employeeId: '', schoolId: '', departmentId: '' 
+  });
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchHierarchy = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/api/admin/hierarchy`);
+        setHierarchy(res.data);
+      } catch (err) {
+        console.error("Failed to fetch university structure:", err);
+      }
+    };
+    fetchHierarchy();
+  }, []);
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -57,6 +73,37 @@ export default function Signup() {
         {/* Signup Card */}
         <div className="glass-card p-10 bg-white/80 backdrop-blur-xl border-white shadow-2xl">
           <form onSubmit={handleSignup} className="space-y-6">
+            {/* University Context */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-3xl border border-gray-100">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Select School</label>
+                <select 
+                  required
+                  className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:border-primary-400 font-bold text-gray-700 appearance-none shadow-sm"
+                  value={extraData.schoolId}
+                  onChange={(e) => setExtraData({...extraData, schoolId: e.target.value, departmentId: ''})}
+                >
+                  <option value="">Select School</option>
+                  {hierarchy.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Select Department</label>
+                <select 
+                  required
+                  disabled={!extraData.schoolId}
+                  className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:border-primary-400 font-bold text-gray-700 appearance-none shadow-sm disabled:opacity-50"
+                  value={extraData.departmentId}
+                  onChange={(e) => setExtraData({...extraData, departmentId: e.target.value})}
+                >
+                  <option value="">Select Dept</option>
+                  {hierarchy.find(s => s._id === extraData.schoolId)?.departments.map(d => (
+                    <option key={d._id} value={d._id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>

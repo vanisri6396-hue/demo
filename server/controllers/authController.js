@@ -11,7 +11,7 @@ exports.register = async (req, res) => {
       name, email, password, role,
       rollNo, employeeId,
       department, section, year, semester, phone,
-      verificationKey
+      verificationKey, schoolId, departmentId
     } = req.body;
 
     if (!name || !email || !password) {
@@ -44,6 +44,8 @@ exports.register = async (req, res) => {
       email: email.toLowerCase(),
       password: hashed,
       role: role || "student",
+      schoolId,
+      departmentId,
       rollNo:     rollNo     || "",
       employeeId: employeeId || "",
       department: department || "",
@@ -101,6 +103,8 @@ exports.login = async (req, res) => {
       section:    user.section,
       year:       user.year,
       semester:   user.semester,
+      schoolId:   user.schoolId,
+      departmentId: user.departmentId,
       userId:     user._id
     });
 
