@@ -109,8 +109,8 @@ const AdminDashboard = () => {
           {/* Schools Chart */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800 mb-6">School Performance Index</h3>
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-80 w-full relative">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={hierarchy.map(s => ({ name: s.code, value: 80 + Math.random() * 15 }))}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" />
@@ -164,8 +164,8 @@ const AdminDashboard = () => {
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="font-semibold text-gray-800 mb-6">Attendance Overview</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-64 w-full relative">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie
                     data={[

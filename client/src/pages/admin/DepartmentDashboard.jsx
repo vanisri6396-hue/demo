@@ -110,8 +110,8 @@ const DepartmentDashboard = () => {
                 </div>
               </div>
             </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-80 w-full relative">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={sectionStats}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                   <XAxis dataKey="section" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: '#9ca3af' }} />

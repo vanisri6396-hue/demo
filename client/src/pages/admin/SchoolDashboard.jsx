@@ -163,8 +163,8 @@ const SchoolDashboard = () => {
             <h3 className="font-bold text-gray-800">Performance Index</h3>
             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">TODAY</span>
           </div>
-          <div className="h-80 flex-1">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-80 w-full relative">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={attendanceData?.deptContribution || []} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
                 <XAxis type="number" hide />
