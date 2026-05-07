@@ -30,6 +30,7 @@ import InchargeDashboard from "./pages/teacher/InchargeDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import SchoolDashboard from "./pages/admin/SchoolDashboard";
 import DepartmentDashboard from "./pages/admin/DepartmentDashboard";
+import SchoolsPage from "./pages/admin/SchoolsPage";
 
 // A simple protected route wrapper (can be expanded later with real auth checks)
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -77,6 +78,7 @@ export default function App() {
           </ProtectedRoute>
         }>
           <Route index element={<AdminDashboard />} />
+          <Route path="schools" element={<SchoolsPage />} />
           <Route path="school/:schoolId" element={<SchoolDashboard />} />
           <Route path="department/:deptId" element={<DepartmentDashboard />} />
           <Route path="students" element={<SectionDetails />} />

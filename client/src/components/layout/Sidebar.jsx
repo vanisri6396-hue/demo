@@ -8,6 +8,7 @@ import {
 const navConfig = {
   admin: [
     { title: 'University Overview', path: '/admin', icon: LayoutDashboard },
+    { title: 'Schools', path: '/admin/schools', icon: Building2 },
     { title: 'Students', path: '/admin/students', icon: Users },
     { title: 'Faculty', path: '/admin/faculty', icon: UserSquare },
     { title: 'Timetable', path: '/admin/timetable', icon: Calendar },

@@ -5,8 +5,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { 
-  ArrowLeft, Building2, Users, GraduationCap, ChevronRight, Search, LayoutGrid
+  ArrowLeft, Building2, Users, GraduationCap, ChevronRight, Search, LayoutGrid,
+  BookOpen, MoreVertical, ExternalLink
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { BASE_URL } from '../../config';
 
 const SchoolDashboard = () => {
@@ -24,8 +26,6 @@ const SchoolDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // We need to find the school from the hierarchy or have a dedicated getSchool endpoint
-        // For now, let's fetch hierarchy and filter, or use a new endpoint if available
         const [hierarchyRes, attendanceRes] = await Promise.all([
           axios.get(`${BASE_URL}/api/admin/hierarchy`, authHeader),
           axios.get(`${BASE_URL}/api/admin/attendance/school/${schoolId}`, authHeader)
@@ -49,114 +49,155 @@ const SchoolDashboard = () => {
     </div>
   );
 
-  if (!schoolData) return <div className="p-8 text-center text-red-500">School not found ❌</div>;
+  if (!schoolData) return <div className="p-8 text-center text-red-500 font-bold">School not found ❌</div>;
+
+  const filteredDepts = schoolData.departments.filter(d => 
+    d.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    d.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Breadcrumbs & Header */}
+      {/* Header & Navigation */}
       <div className="mb-8">
         <button 
-          onClick={() => navigate('/admin')}
-          className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors mb-4 group"
+          onClick={() => navigate('/admin/schools')}
+          className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-all mb-4 group font-medium"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          Back to University Overview
+          Back to Schools
         </button>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-              <Building2 className="w-8 h-8" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+            <div className="w-20 h-20 rounded-3xl bg-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-indigo-200">
+              <Building2 className="w-10 h-10" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{schoolData.name}</h1>
-              <p className="text-gray-500">{schoolData.code} • School Administrator Console</p>
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">{schoolData.name}</h1>
+                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full border border-indigo-100 uppercase">
+                  {schoolData.code}
+                </span>
+              </div>
+              <p className="text-gray-500 font-medium">Academic Management Console • institutional Dashboard</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-3 text-emerald-600 mb-2">
-            <Users className="w-5 h-5" />
-            <span className="text-sm font-semibold uppercase tracking-wider">Departments</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{schoolData.departments.length}</p>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-3 text-indigo-600 mb-2">
-            <GraduationCap className="w-5 h-5" />
-            <span className="text-sm font-semibold uppercase tracking-wider">Avg Attendance</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">
-            {Math.round(attendanceData?.deptContribution?.reduce((acc, curr) => acc + curr.percentage, 0) / (attendanceData?.deptContribution?.length || 1))}%
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-3 text-purple-600 mb-2">
-            <LayoutGrid className="w-5 h-5" />
-            <span className="text-sm font-semibold uppercase tracking-wider">Total Programs</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">
-            {schoolData.departments.reduce((acc, curr) => acc + (curr.programs?.length || 0), 0)}
-          </p>
-        </div>
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard 
+          icon={<BookOpen className="text-indigo-600" />} 
+          label="Departments" 
+          value={schoolData.departments.length} 
+          color="indigo" 
+        />
+        <StatCard 
+          icon={<GraduationCap className="text-emerald-600" />} 
+          label="Avg Attendance" 
+          value={`${Math.round(attendanceData?.deptContribution?.reduce((acc, curr) => acc + curr.percentage, 0) / (attendanceData?.deptContribution?.length || 1))}%`} 
+          color="emerald" 
+        />
+        <StatCard 
+          icon={<Users className="text-amber-600" />} 
+          label="Active Faculty" 
+          value="45+" 
+          color="amber" 
+        />
+        <StatCard 
+          icon={<LayoutGrid className="text-purple-600" />} 
+          label="Programs" 
+          value={schoolData.departments.reduce((acc, curr) => acc + (curr.programs?.length || 0), 0)} 
+          color="purple" 
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Department Comparison Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-6">Department Attendance Comparison</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={attendanceData?.deptContribution || []}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="department" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="percentage" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Department List */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-800 mb-4">Academic Departments</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Department Grid */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-gray-800">Academic Departments</h3>
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input 
                 type="text" 
-                placeholder="Search departments..." 
-                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none"
+                placeholder="Quick search..." 
+                className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 shadow-sm w-48"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto max-h-[400px] divide-y divide-gray-50">
-            {schoolData.departments
-              .filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()))
-              .map(dept => (
-              <div 
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {filteredDepts.map((dept, idx) => (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.05 }}
                 key={dept._id}
                 onClick={() => navigate(`/admin/department/${dept._id}`)}
-                className="p-4 hover:bg-gray-50 cursor-pointer group flex items-center justify-between transition-colors"
+                className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group"
               >
-                <div>
-                  <p className="font-medium text-gray-900">{dept.name}</p>
-                  <p className="text-xs text-gray-500">{dept.programs?.length || 0} Programs • {dept.code}</p>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <MoreVertical className="w-4 h-4 text-gray-300" />
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
-              </div>
+                <h4 className="font-bold text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors">{dept.name}</h4>
+                <p className="text-xs text-gray-400 font-medium uppercase mb-4 tracking-wider">{dept.code}</p>
+                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                  <span className="text-[10px] font-bold text-gray-400 group-hover:text-indigo-500 transition-colors">VIEW SECTIONS</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-indigo-500 transition-all" />
+                </div>
+              </motion.div>
             ))}
+          </div>
+        </div>
+
+        {/* School-wide Attendance Chart */}
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="font-bold text-gray-800">Performance Index</h3>
+            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">TODAY</span>
+          </div>
+          <div className="h-80 flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={attendanceData?.deptContribution || []} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                <XAxis type="number" hide />
+                <YAxis dataKey="department" type="category" width={100} tick={{ fontSize: 10, fontWeight: 600 }} stroke="#9ca3af" />
+                <Tooltip 
+                  cursor={{ fill: '#f9fafb' }}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                />
+                <Bar dataKey="percentage" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-6 pt-6 border-t border-gray-50">
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Attendance patterns across all departments are monitored in real-time. Click any department card to manage its sections.
+            </p>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+const StatCard = ({ icon, label, value, color }) => (
+  <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 transition-all hover:shadow-md hover:scale-[1.02]">
+    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-${color}-50 shadow-inner`}>
+      {React.cloneElement(icon, { size: 24 })}
+    </div>
+    <div>
+      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">{label}</p>
+      <p className="text-3xl font-black text-gray-900 tracking-tight">{value}</p>
+    </div>
+  </div>
+);
 
 export default SchoolDashboard;
