@@ -167,7 +167,7 @@ export default function FacultyManager() {
           )}
         </div>
       </div>
-      </div>
+
 
       {/* Add Faculty Modal */}
       {showModal && (
