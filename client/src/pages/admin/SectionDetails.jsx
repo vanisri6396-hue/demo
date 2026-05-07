@@ -311,6 +311,11 @@ export default function SectionDetails() {
                 <h2 className="text-2xl font-black text-gray-900">Add New Student</h2>
                 <p className="text-gray-500 text-sm font-medium">Create a student record in MongoDB</p>
               </div>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} className="text-gray-400" />
               </button>
             </div>
             
@@ -321,7 +326,7 @@ export default function SectionDetails() {
                   type="text" 
                   required
                   placeholder="e.g. John Doe"
-                  className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 transition-all"
+                  className="w-full px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-50 outline-none font-bold text-gray-900 transition-all"
                   value={newStudent.name}
                   onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
                 />
@@ -382,7 +387,7 @@ export default function SectionDetails() {
                     onChange={(e) => setNewStudent({...newStudent, section: e.target.value})}
                   />
                 </div>
-              </div>            </div>
+              </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Email Address</label>
@@ -429,7 +434,7 @@ export default function SectionDetails() {
 
               <button 
                 type="submit" 
-                className="w-full btn-primary py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-primary-100 mt-4"
+                className="w-full py-4 bg-primary-600 text-white rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-primary-100 mt-4 font-black uppercase tracking-widest"
               >
                 Create Student Record <ChevronRight size={18} />
               </button>
