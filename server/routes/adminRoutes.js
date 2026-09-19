@@ -8,6 +8,9 @@ const adminOrAuthority = allowRoles("admin","authority","superadmin");
 // Public Hierarchy (for Signup/Login)
 router.get("/hierarchy/public", ctrl.getUniversityHierarchy);
 
+// One-time public seed endpoint (protected by secret key, no auth required)
+router.post("/seed-public", ctrl.seedUniversityData);
+
 // Temporary cleanup route for old Dean accounts
 router.get("/cleanup-deans", verifyToken, allowRoles("admin", "superadmin"), async (req, res) => {
   try {
