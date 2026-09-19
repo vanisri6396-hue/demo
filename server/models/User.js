@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema(
       enum: ["student", "teacher", "classIncharge", "authority", "dean", "admin", "superadmin"],
       default: "student"
     },
+
     // ── Hierarchy links ────────────────────────
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "School", default: null },
     departmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Department", default: null },
@@ -29,6 +30,10 @@ const userSchema = new mongoose.Schema(
 
     // ── Teacher-specific ─────────────────────────────
     employeeId: { type: String, default: "" },
+
+    // ── Admin-specific ────────────────────────────────
+    // Admin logs in with Admin ID + password (university-wide; no school/dept scope)
+    adminId: { type: String, default: "" },
 
     // ── Classes assigned (teachers/incharges) ────────
     assignedClasses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Class" }],

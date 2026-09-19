@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../config";
-import { LogIn, Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight, Shield } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
+  const [adminId, setAdminId] = useState("");
   const [password, setPassword] = useState("");
   const [hierarchy, setHierarchy] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState("");
@@ -28,20 +29,28 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
-    // Validation: Require School for all, Dept for others
-    if (!selectedSchool) return alert("Please select your School ⚠️");
-    if (loginRole !== 'dean' && !selectedDept) return alert("Please select your Department ⚠️");
+
+    const isAdmin = loginRole === "admin";
+
+    // Admin logs in with Admin ID + password only (no School/Department required)
+    if (isAdmin) {
+      if (!adminId.trim()) return alert("Please enter your Admin ID ⚠️");
+      if (!password) return alert("Please enter your Password ⚠️");
+    } else {
+      // Non-admin: Require School for all, Dept for others
+      if (!selectedSchool) return alert("Please select your School ⚠️");
+      if (loginRole !== 'dean' && !selectedDept) return alert("Please select your Department ⚠️");
+    }
 
     setLoading(true);
     try {
-      const res = await axios.post(`${BASE_URL}/api/auth/login`, {
-        email,
-        password
-      });
+      const res = await axios.post(`${BASE_URL}/api/auth/login`, isAdmin
+        ? { adminId, password }
+        : { email, password }
+      );
 
       localStorage.setItem("token", res.data.token);
-      
+
       // Save full user context for dashboards
       const userContext = {
         role: res.data.role,
@@ -51,6 +60,7 @@ export default function Login() {
         departmentId: res.data.departmentId,
         userId: res.data.userId
       };
+      if (res.data.adminId) userContext.adminId = res.data.adminId;
       localStorage.setItem("user", JSON.stringify(userContext));
       
       const role = res.data.role;
@@ -114,6 +124,7 @@ export default function Login() {
                 </select>
               </div>
 
+              {loginRole !== 'admin' && (
               <div className={`grid ${loginRole !== 'dean' ? 'grid-cols-2' : 'grid-cols-1'} gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100`}>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">School</label>
@@ -145,21 +156,40 @@ export default function Login() {
                   </div>
                 )}
               </div>
+            )}
             </div>
 
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="email"
-                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-50 transition-all font-medium text-gray-700"
-                  placeholder="name@university.edu"
-                  required
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+            {loginRole === 'admin' ? (
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Admin ID</label>
+                <div className="relative">
+                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-500" size={18} />
+                  <input
+                    type="text"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-50 transition-all font-medium text-gray-700"
+                    placeholder="e.g. ADM-001"
+                    value={adminId}
+                    required
+                    onChange={(e) => setAdminId(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <input
+                    type="email"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-50 transition-all font-medium text-gray-700"
+                    placeholder="name@university.edu"
+                    value={email}
+                    required
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <div className="flex justify-between items-center mb-2 ml-1">

@@ -24,7 +24,7 @@ const AdminDashboard = () => {
 
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', role: 'student',
-    schoolId: '', departmentId: '', rollNo: '', employeeId: '',
+    schoolId: '', departmentId: '', rollNo: '', employeeId: '', adminId: '',
     section: '', year: 1, semester: 1
   });
 
@@ -59,7 +59,7 @@ const AdminDashboard = () => {
       setShowAddModal(false);
       setFormData({
         name: '', email: '', password: '', role: 'student',
-        schoolId: '', departmentId: '', rollNo: '', employeeId: '',
+        schoolId: '', departmentId: '', rollNo: '', employeeId: '', adminId: '',
         section: '', year: 1, semester: 1
       });
       fetchInitialData();
@@ -226,14 +226,16 @@ const AdminDashboard = () => {
                   <Input label="Password" type="password" value={formData.password} onChange={v => setFormData({...formData, password: v})} required />
                   <Select label="Role" value={formData.role} options={['student', 'teacher', 'admin']} onChange={v => setFormData({...formData, role: v})} />
                   
+{formData.role !== 'admin' && (
                   <Select 
                     label="School" 
                     value={formData.schoolId} 
                     options={hierarchy.map(s => ({ label: s.name, value: s._id }))} 
                     onChange={v => setFormData({...formData, schoolId: v, departmentId: ''})} 
                   />
+)}
                   
-                  {formData.schoolId && (
+                  {formData.role !== 'admin' && formData.schoolId && (
                     <Select 
                       label="Department" 
                       value={formData.departmentId} 
@@ -249,6 +251,8 @@ const AdminDashboard = () => {
                       <Input label="Year" type="number" value={formData.year} onChange={v => setFormData({...formData, year: parseInt(v)})} />
                       <Input label="Semester" type="number" value={formData.semester} onChange={v => setFormData({...formData, semester: parseInt(v)})} />
                     </>
+) : formData.role === 'admin' ? (
+                    <Input label="Admin ID" value={formData.adminId || ''} onChange={v => setFormData({...formData, adminId: v})} />
                   ) : (
                     <Input label="Employee ID" value={formData.employeeId} onChange={v => setFormData({...formData, employeeId: v})} />
                   )}

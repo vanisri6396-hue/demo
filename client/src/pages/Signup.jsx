@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../config";
-import { UserPlus, User, Mail, Lock, Shield, ArrowRight } from "lucide-react";
+import { User, Mail, Lock, Shield, ArrowRight } from "lucide-react";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -33,28 +33,34 @@ export default function Signup() {
   const handleSignup = async (e) => {
     e.preventDefault();
     
-    // Check if school is selected (Required for all)
-    if (!extraData.schoolId) {
-      return alert("Please select your School to continue! ⚠️");
-    }
-
-    // Check if department is selected (Required for all EXCEPT Dean)
-    if (role !== 'dean' && !extraData.departmentId) {
-      return alert("Please select your Department to continue! ⚠️");
+    // Admin registers with Admin ID + password only (no School/Department)
+    if (role === 'admin') {
+      if (!extraData.adminId?.trim()) return alert("Please enter your Admin ID ⚠️");
+    } else {
+      // Non-admin: Check school (Required for all) ...
+      if (!extraData.schoolId) {
+        return alert("Please select your School to continue! ⚠️");
+      }
+      // ... and department (Required for all EXCEPT Dean)
+      if (role !== 'dean' && !extraData.departmentId) {
+        return alert("Please select your Department to continue! ⚠️");
+      }
     }
     setLoading(true);
     try {
       // Clean up the payload: convert empty strings to null or remove them
+      const isAdmin = role === 'admin';
       const payload = {
         name,
         email,
         password,
         role,
-        schoolId: extraData.schoolId || null,
-        departmentId: role === 'dean' ? null : (extraData.departmentId || null),
+        schoolId: isAdmin ? null : (extraData.schoolId || null),
+        departmentId: (isAdmin || role === 'dean') ? null : (extraData.departmentId || null),
         rollNo: extraData.rollNo || "",
         section: extraData.section || "",
         employeeId: extraData.employeeId || "",
+        adminId: extraData.adminId || "",
         verificationKey: extraData.verificationKey || ""
       };
 
@@ -91,7 +97,8 @@ export default function Signup() {
         {/* Signup Card */}
         <div className="glass-card p-10 bg-white/80 backdrop-blur-xl border-white shadow-2xl">
           <form onSubmit={handleSignup} className="space-y-6">
-            {/* University Context */}
+            {/* University Context (hidden for admin — university-wide, no school/dept) */}
+            {role !== 'admin' && (
             <div className="p-6 bg-gray-900 rounded-3xl border-none shadow-xl shadow-gray-200/50 space-y-4">
               <h3 className="text-[10px] font-black text-primary-400 uppercase tracking-[0.3em] mb-4">Institutional Identity</h3>
               <div className={`grid grid-cols-1 ${role !== 'dean' ? 'md:grid-cols-2' : ''} gap-4`}>
@@ -126,6 +133,7 @@ export default function Signup() {
                 )}
               </div>
             </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -236,7 +244,24 @@ export default function Signup() {
               </div>
             )}
 
-            {(role === 'teacher' || role === 'classIncharge' || role === 'authority' || role === 'admin' || role === 'dean') && (
+            {role === 'admin' ? (
+              <div className="p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100 animate-in slide-in-from-top-4 duration-500">
+                <div>
+                  <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2">
+                    <Shield size={12} /> Admin ID
+                  </label>
+                  <input
+                    className="w-full px-4 py-3 bg-white border border-indigo-100 rounded-xl focus:outline-none focus:border-indigo-400 font-bold text-gray-700"
+                    placeholder="e.g. ADM-001"
+                    value={extraData.adminId || ""}
+                    onChange={(e) => setExtraData({...extraData, adminId: e.target.value})}
+                  />
+                  <p className="text-[9px] text-gray-400 font-bold mt-2 italic">
+                    Admins get university-wide access. No School/Department is required.
+                  </p>
+                </div>
+              </div>
+            ) : (role === 'teacher' || role === 'classIncharge' || role === 'authority' || role === 'dean') && (
               <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 animate-in slide-in-from-top-4 duration-500 space-y-4">
                 <div>
                   <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2 ml-1">Employee ID / Faculty ID</label>

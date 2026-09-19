@@ -11,7 +11,7 @@ exports.register = async (req, res) => {
       name, email, password, role,
       rollNo, employeeId,
       department, section, year, semester, phone,
-      verificationKey, schoolId, departmentId
+      verificationKey, schoolId, departmentId, adminId
     } = req.body;
 
     if (!name || !email || !password) {
@@ -24,8 +24,21 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: passwordCheck.message });
     }
 
-    // Security: Check for faculty verification key if role is not student
-    if (role !== "student") {
+    // ── Admin: Admin ID + password only (university-wide, no school/dept, no faculty key)
+    const adminRole = role === "admin";
+    if (adminRole) {
+      const adminIdProvided = (adminId || employeeId || "").trim();
+      if (!adminIdProvided) {
+        return res.status(400).json({ message: "Admin ID is required ❌" });
+      }
+      const adminIdExists = await User.findOne({ adminId: adminIdProvided });
+      if (adminIdExists) {
+        return res.status(409).json({ message: "Admin ID already in use ❌" });
+      }
+    }
+
+    // Security: Check for faculty verification key if role is not student/admin
+    if (role !== "student" && !adminRole) {
       const serverKey = process.env.FACULTY_SECRET_KEY || "UNIVERSITY_STAFF_2024";
       if (verificationKey !== serverKey) {
         return res.status(403).json({ message: "Invalid Faculty Verification Key! ❌" });
@@ -40,9 +53,12 @@ exports.register = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
 
     // Sanitize school/department IDs (convert empty strings to null to avoid cast errors)
-    const sanitizedSchoolId = (schoolId && schoolId.trim() !== "") ? schoolId : null;
-    const sanitizedDeptId = (departmentId && departmentId.trim() !== "") ? departmentId : null;
+    // Admin is university-wide → always null (full access across all schools/depts)
+    const isAdmin = adminRole;
+    const sanitizedSchoolId = isAdmin ? null : ((schoolId && schoolId.trim() !== "") ? schoolId : null);
+    const sanitizedDeptId = isAdmin ? null : ((departmentId && departmentId.trim() !== "") ? departmentId : null);
 
+    const adminIdValue = isAdmin ? (adminId || employeeId || "").trim() : "";
     const user = await User.create({
       name,
       email: email.toLowerCase(),
@@ -51,7 +67,8 @@ exports.register = async (req, res) => {
       schoolId: sanitizedSchoolId,
       departmentId: sanitizedDeptId,
       rollNo:     rollNo     || "",
-      employeeId: employeeId || "",
+      employeeId: isAdmin ? adminIdValue : (employeeId || ""),
+      adminId:    isAdmin ? adminIdValue : (adminId || ""),
       department: department || "",
       section:    section    || "",
       year:       year       || 1,
@@ -73,13 +90,22 @@ exports.register = async (req, res) => {
 /* ─── LOGIN ─────────────────────────────────────────────────────────── */
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, adminId } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required ❌" });
+    // Admins may log in with Admin ID (or email/employeeId for backward compat)
+    const identifier = (adminId && adminId.trim()) || (email && email.trim());
+
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "Email/Admin ID and password are required ❌" });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({
+      $or: [
+        { email: identifier.toLowerCase() },
+        { adminId: identifier },
+        { employeeId: identifier }
+      ]
+    });
     if (!user) {
       return res.status(404).json({ message: "User not found ❌" });
     }
@@ -106,6 +132,7 @@ exports.login = async (req, res) => {
       email:      user.email,
       rollNo:     user.rollNo,
       employeeId: user.employeeId,
+      adminId:    user.adminId,
       department: user.department,
       section:    user.section,
       year:       user.year,

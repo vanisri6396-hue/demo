@@ -22,3 +22,6 @@ server/dist/
 # Seed Scripts (optional, but usually safe to ignore if they are one-offs)
 # seed_events.js
 # seedTimetable.js
+
+server/.env
+.env

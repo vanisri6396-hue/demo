@@ -92,7 +92,7 @@ exports.createUser = async (req, res) => {
     const bcrypt = require("bcryptjs");
     const { name, email, password, role, rollNo, employeeId,
             department, section, year, semester, phone,
-            schoolId, departmentId } = req.body;
+            schoolId, departmentId, adminId } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email, password required ❌" });
@@ -104,18 +104,31 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: passwordCheck.message });
     }
 
+    // Admin role → Admin ID + password only (university-wide, no school/dept)
+    const isAdmin = role === "admin";
+    if (isAdmin) {
+      const adminIdProvided = (adminId || employeeId || "").trim();
+      if (!adminIdProvided) {
+        return res.status(400).json({ message: "Admin ID is required for admin accounts ❌" });
+      }
+      const adminIdExists = await User.findOne({ adminId: adminIdProvided });
+      if (adminIdExists) return res.status(409).json({ message: "Admin ID already in use ❌" });
+    }
+
     const exists = await User.findOne({ email: email.toLowerCase() });
     if (exists) return res.status(409).json({ message: "Email already exists ❌" });
 
     const hashed = await bcrypt.hash(password, 10);
+    const adminIdValue = isAdmin ? (adminId || employeeId || "").trim() : (adminId || "");
     const user = await User.create({
       name, email: email.toLowerCase(), password: hashed,
       role: role || "student",
-      rollNo: rollNo || "", employeeId: employeeId || "",
+      rollNo: rollNo || "", employeeId: isAdmin ? adminIdValue : (employeeId || ""),
+      adminId:    isAdmin ? adminIdValue : (adminId || ""),
       department: department || "", section: section || "",
       year: year || 1, semester: semester || 1, phone: phone || "",
-      schoolId: schoolId || null,
-      departmentId: departmentId || null
+      schoolId: isAdmin ? null : (schoolId || null),
+      departmentId: isAdmin ? null : (departmentId || null)
     });
 
     res.status(201).json({ message: "User created ✅", userId: user._id });
@@ -290,117 +303,8 @@ exports.getClassAttendance = async (req, res) => {
 /* ─── SEED UNIVERSITY DATA ─────────────────────────────────────────── */
 exports.seedUniversityData = async (req, res) => {
   try {
-    const universityData = [
-      {
-        name: "School of Computational Engineering",
-        code: "SCE",
-        departments: [
-          { name: "Computer Science and Engineering", code: "CSE", programs: ["B.Tech Computer Science and Engineering", "B.Tech CSE (AI & ML)", "M.Tech CSE (AI)", "Ph.D Computer Science & Engineering"] },
-          { name: "Artificial Intelligence & Data Science", code: "AIDS_SCE", programs: ["B.Tech Artificial Intelligence and Data Science", "M.Tech CSE (Big Data)"] },
-          { name: "Information Technology", code: "IT", programs: ["B.Tech Information Technology", "M.Tech CSE (IoT & Cloud Computing)"] },
-          { name: "Cyber Security", code: "CS", programs: ["B.Tech CSE (Cyber Security)"] },
-          { name: "Applied AI", code: "AAI", programs: ["B.Tech CSE (Applied AI)"] }
-        ]
-      },
-      {
-        name: "School of Core Engineering",
-        code: "SCORE",
-        departments: [
-          { name: "Electronics and Communication Engineering", code: "ECE", programs: ["B.Tech Electronics and Communication Engineering", "M.Tech Communication Systems", "Ph.D Electronics and Communication Engineering"] }
-        ]
-      },
-      {
-        name: "School of Basic Sciences",
-        code: "SBS",
-        departments: [
-          { name: "Chemistry", code: "CHEM", programs: ["B.Sc Chemistry", "M.Sc Chemistry"] },
-          { name: "Mathematics", code: "MATH", programs: ["M.Sc Mathematics"] },
-          { name: "Physics", code: "PHYS", programs: ["M.Sc Physics"] }
-        ]
-      },
-      {
-        name: "School of Humanities",
-        code: "SOH",
-        departments: [
-          { name: "Tamil", code: "TAM", programs: ["B.A Tamil"] },
-          { name: "English", code: "ENG", programs: ["M.A English"] }
-        ]
-      },
-      {
-        name: "School of Agricultural Sciences",
-        code: "SAS",
-        departments: [
-          { name: "Agriculture", code: "AGRI", programs: ["B.Sc (Hons) Agriculture"] }
-        ]
-      },
-      {
-        name: "School of Allied Health Sciences",
-        code: "SAHS",
-        departments: [
-          { name: "Cardiac Technology", code: "CT", programs: ["B.Sc Cardiac Technology"] },
-          { name: "Medical Laboratory Technology", code: "MLT", programs: ["B.Sc Medical Laboratory Technology"] },
-          { name: "Optometry", code: "OPT", programs: ["B.Sc Optometry"] },
-          { name: "Operation Theatre & Anesthesia Technology", code: "OTAT", programs: ["B.Sc Operation Theatre and Anesthesia Technology"] },
-          { name: "Physician Assistant", code: "PA", programs: ["B.Sc Physician Assistant"] },
-          { name: "Radio Imaging Technology", code: "RIT", programs: ["B.Sc Radio Imaging Technology"] },
-          { name: "Cardiac Perfusion Technology", code: "CPT", programs: ["B.Sc Cardiac Perfusion Technology"] }
-        ]
-      },
-      {
-        name: "School of Commerce",
-        code: "SOC",
-        departments: [
-          { name: "Commerce", code: "COMM", programs: ["B.Com General", "M.Com"] },
-          { name: "Accounting & Finance", code: "AF", programs: ["B.Com Accounting and Finance"] }
-        ]
-      },
-      {
-        name: "School of Computer Science",
-        code: "SCS",
-        departments: [
-          { name: "Computer Science", code: "CS_SCS", programs: ["MCA (Master of Computer Applications)"] },
-          { name: "Artificial Intelligence & Data Science", code: "AIDS_SCS", programs: ["B.Sc Computer Science (AI & DS)"] }
-        ]
-      },
-      {
-        name: "School of Management Studies",
-        code: "SMS",
-        departments: [
-          { name: "Business Administration", code: "BA", programs: ["MBA (Master of Business Administration)", "Ph.D Management"] },
-          { name: "FinTech", code: "FT", programs: ["BBA (FinTech)"] }
-        ]
-      },
-      {
-        name: "School of Social Studies",
-        code: "SSS",
-        departments: [
-          { name: "Defense & Strategic Studies", code: "DSS", programs: ["B.A Defense and Strategic Studies"] },
-          { name: "International Relations & Public Policy", code: "IRPP", programs: ["B.A International Relations and Public Policy"] },
-          { name: "Social Work", code: "SW", programs: ["Master of Social Work"] }
-        ]
-      },
-      {
-        name: "School of Nursing",
-        code: "SON",
-        departments: [
-          { name: "Nursing", code: "NUR", programs: ["B.Sc Nursing"] }
-        ]
-      },
-      {
-        name: "School of Pharmacy",
-        code: "SOP",
-        departments: [
-          { name: "Pharmacy", code: "PHARM", programs: ["Bachelor of Pharmacy (B.Pharm)"] }
-        ]
-      },
-      {
-        name: "School of Physiotherapy",
-        code: "SPT",
-        departments: [
-          { name: "Physiotherapy", code: "PHYSIO", programs: ["Bachelor of Physiotherapy (BPT)"] }
-        ]
-      }
-    ];
+    const universityData = require('../data/universityData');
+
 
     // Clear existing
     await School.deleteMany({});
