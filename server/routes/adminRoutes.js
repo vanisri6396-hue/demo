@@ -24,6 +24,7 @@ router.get("/cleanup-deans", verifyToken, allowRoles("admin", "superadmin"), asy
 
 router.get("/dashboard",              verifyToken, adminOrAuthority, ctrl.getDashboard);
 router.get("/users",                  verifyToken, adminOrAuthority, ctrl.getAllUsers);
+router.get("/users/:id",              verifyToken, adminOrAuthority, ctrl.getUserById);
 router.post("/users",                 verifyToken, allowRoles("admin"), ctrl.createUser);
 router.delete("/users/:id",           verifyToken, allowRoles("admin"), ctrl.deleteUser);
 router.patch("/users/:id/toggle",     verifyToken, allowRoles("admin"), ctrl.toggleUserActive);

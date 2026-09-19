@@ -23,6 +23,7 @@ import EventManager from "./pages/shared/EventManager";
 import MonthlyReport from "./pages/hod/MonthlyReport";
 import SectionIntelligence from "./pages/hod/SectionIntelligence";
 import FacultyManager from "./pages/hod/FacultyManager";
+import FacultyProfile from "./pages/admin/FacultyProfile";
 import HODStatistics from "./pages/hod/HODStatistics";
 import AuditLogs from "./pages/hod/AuditLogs";
 import InchargeDashboard from "./pages/teacher/InchargeDashboard";
@@ -84,6 +85,7 @@ export default function App() {
           <Route path="students" element={<SectionDetails />} />
           <Route path="students/:id" element={<StudentProfile />} />
           <Route path="faculty" element={<FacultyManager />} />
+          <Route path="faculty/:id" element={<FacultyProfile />} />
           <Route path="timetable" element={<TimetableManager />} />
           <Route path="analytics" element={<AdminDashboard />} />
           <Route path="events" element={<EventManager />} />
@@ -114,6 +116,7 @@ export default function App() {
           <Route path="approvals" element={<ApprovalDashboard />} />
           <Route path="sections" element={<SectionIntelligence />} />
           <Route path="faculty" element={<FacultyManager />} />
+          <Route path="faculty/:id" element={<FacultyProfile />} />
           <Route path="statistics" element={<HODStatistics />} />
           <Route path="timetable" element={<TimetableManager />} />
           <Route path="audit" element={<AuditLogs />} />

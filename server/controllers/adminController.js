@@ -75,6 +75,8 @@ exports.getAllUsers = async (req, res) => {
 
     const users = await User.find(filter)
       .select("-password")
+      .populate("schoolId", "name code")
+      .populate("departmentId", "name code")
       .sort({ name: 1 })
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
@@ -83,6 +85,24 @@ exports.getAllUsers = async (req, res) => {
     res.json({ users, total, page: Number(page) });
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch users ❌" });
+  }
+};
+
+/* ─── SINGLE USER ────────────────────────────────────────────────────── */
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select("-password")
+      .populate("schoolId", "name code")
+      .populate("departmentId", "name code");
+
+    if (!user) return res.status(404).json({ message: "User not found ❌" });
+    res.json(user);
+  } catch (err) {
+    if (err.name === "CastError") {
+      return res.status(404).json({ message: "User not found ❌" });
+    }
+    res.status(500).json({ message: "Failed to fetch user ❌" });
   }
 };
 

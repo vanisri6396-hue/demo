@@ -75,8 +75,10 @@ async function main() {
   checkIn("HOD with School + Department created", hod.status, [201]);
   const hodList = await api("GET", `/api/admin/users?role=authority&limit=100`, null, token);
   const hodDoc = hodList.data.users.find(u => u._id === (hod.data.userId || ""));
-  check("HOD stored with school scope", hodDoc && hodDoc.schoolId, school._id);
-  check("HOD stored with department scope", hodDoc && hodDoc.departmentId, dept._id);
+  // Users are returned with populated school/department docs → read `_id`
+  const refId = (val) => (val && val._id ? val._id : val) || null;
+  check("HOD stored with school scope", refId(hodDoc && hodDoc.schoolId), school._id);
+  check("HOD stored with department scope", refId(hodDoc && hodDoc.departmentId), dept._id);
 
   // ── Student / Teacher / Class Incharge ────────────────────────────
   const student = await create("Student", "student", {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { BASE_URL } from '../../config';
 import { 
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function FacultyManager() {
+  const location = useLocation();
   const [faculty, setFaculty] = useState([]);
   const [hierarchy, setHierarchy] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +28,14 @@ export default function FacultyManager() {
     schoolId: '', departmentId: '', role: 'teacher'
   });
   const [summary, setSummary] = useState({ total: 0, active: 0 });
+
+  // Keep the profile link inside the section the user is browsing (admin vs HOD)
+  const basePath = location.pathname.startsWith('/hod') ? '/hod/faculty' : '/admin/faculty';
+
+  // Faculty store schoolId/departmentId as ObjectIds, so read the populated
+  // objects first and fall back to the legacy plain-text `department` field.
+  const schoolName     = (member) => member.schoolId?.name     || 'Not assigned';
+  const departmentName = (member) => member.departmentId?.name || member.department || 'Not assigned';
 
   const fetchData = async () => {
     try {
@@ -104,7 +114,7 @@ export default function FacultyManager() {
         <div className="glass-card p-6 bg-white border-gray-100">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">DEPARTMENTS</p>
           <h3 className="text-3xl font-black text-primary-600">
-            {new Set(faculty.map(f => f.department)).size}
+            {new Set(faculty.map(f => departmentName(f))).size}
           </h3>
         </div>
         <div className="glass-card p-6 bg-white border-gray-100">
@@ -137,9 +147,11 @@ export default function FacultyManager() {
               <thead>
                 <tr className="bg-gray-50/50 text-left border-b border-gray-100">
                   <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Faculty Member</th>
+                  <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">School</th>
                   <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Department</th>
                   <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Employee ID</th>
-                  <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Status</th>
+                  <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                  <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -157,18 +169,29 @@ export default function FacultyManager() {
                       </div>
                     </td>
                     <td className="p-6">
-                      <span className="font-bold text-gray-700">{member.department || 'General'}</span>
+                      <span className="font-bold text-gray-700">{schoolName(member)}</span>
+                    </td>
+                    <td className="p-6">
+                      <span className="font-bold text-gray-700">{departmentName(member)}</span>
                     </td>
                     <td className="p-6">
                       <span className="font-bold text-gray-700">{member.employeeId || 'N/A'}</span>
                     </td>
-                    <td className="p-6 text-right">
+                    <td className="p-6">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
                         member.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${member.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
                         {member.isActive ? 'Active' : 'Inactive'}
                       </span>
+                    </td>
+                    <td className="p-6 text-right">
+                      <Link
+                        to={`${basePath}/${member._id}`}
+                        className="text-primary-600 hover:text-primary-700 text-sm font-semibold inline-flex items-center gap-1"
+                      >
+                        Profile <ChevronRight size={14} />
+                      </Link>
                     </td>
                   </tr>
                 ))}
