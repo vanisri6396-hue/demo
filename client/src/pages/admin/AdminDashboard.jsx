@@ -53,8 +53,25 @@ const AdminDashboard = () => {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
+
+    // ── Scope validation (mirrors server-side rules) ─────────────
+    if (formData.role !== 'admin' && !formData.schoolId) {
+      alert("Please select a School for this member ❌");
+      return;
+    }
+    if (formData.role === 'authority' && !formData.departmentId) {
+      alert("HOD accounts require a Department assignment ❌");
+      return;
+    }
+
+    // Deans are school-wide → never send a department assignment
+    const payload = {
+      ...formData,
+      departmentId: formData.role === 'dean' ? '' : formData.departmentId
+    };
+
     try {
-      await axios.post(`${BASE_URL}/api/admin/users`, formData, authHeader);
+      await axios.post(`${BASE_URL}/api/admin/users`, payload, authHeader);
       alert("User created successfully! ✅");
       setShowAddModal(false);
       setFormData({
@@ -224,7 +241,19 @@ const AdminDashboard = () => {
                   <Input label="Full Name" value={formData.name} onChange={v => setFormData({...formData, name: v})} required />
                   <Input label="Email Address" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} required />
                   <Input label="Password" type="password" value={formData.password} onChange={v => setFormData({...formData, password: v})} required />
-                  <Select label="Role" value={formData.role} options={['student', 'teacher', 'admin']} onChange={v => setFormData({...formData, role: v})} />
+                  <Select 
+                    label="Role" 
+                    value={formData.role} 
+                    options={[
+                      { label: 'Student', value: 'student' },
+                      { label: 'Teacher', value: 'teacher' },
+                      { label: 'Class Incharge', value: 'classIncharge' },
+                      { label: 'HOD / Authority', value: 'authority' },
+                      { label: 'Dean / School Head', value: 'dean' },
+                      { label: 'Administrator', value: 'admin' }
+                    ]} 
+                    onChange={v => setFormData({...formData, role: v, schoolId: '', departmentId: ''})} 
+                  />
                   
 {formData.role !== 'admin' && (
                   <Select 
@@ -235,7 +264,8 @@ const AdminDashboard = () => {
                   />
 )}
                   
-                  {formData.role !== 'admin' && formData.schoolId && (
+                  {/* Dean scope = whole School → no Department assignment */}
+                  {formData.role !== 'admin' && formData.role !== 'dean' && formData.schoolId && (
                     <Select 
                       label="Department" 
                       value={formData.departmentId} 

@@ -104,8 +104,26 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: passwordCheck.message });
     }
 
+    // ── Role whitelist + scope validation ─────────────────────────
+    // Admin can create: Student, Teacher, Class Incharge, HOD (authority), Dean, Admin
+    const creatableRoles = ["student", "teacher", "classIncharge", "authority", "dean", "admin"];
+    const targetRole = role || "student";
+    if (!creatableRoles.includes(targetRole)) {
+      return res.status(400).json({ message: "Unsupported role ❌" });
+    }
+
+    // HOD (authority) is department-scoped → School + Department required
+    if (targetRole === "authority" && (!schoolId || !departmentId)) {
+      return res.status(400).json({ message: "School and Department are required for HOD accounts ❌" });
+    }
+
+    // Dean is school-scoped → School required, Department not applicable
+    if (targetRole === "dean" && !schoolId) {
+      return res.status(400).json({ message: "School is required for Dean accounts ❌" });
+    }
+
     // Admin role → Admin ID + password only (university-wide, no school/dept)
-    const isAdmin = role === "admin";
+    const isAdmin = targetRole === "admin";
     if (isAdmin) {
       const adminIdProvided = (adminId || employeeId || "").trim();
       if (!adminIdProvided) {
@@ -122,13 +140,14 @@ exports.createUser = async (req, res) => {
     const adminIdValue = isAdmin ? (adminId || employeeId || "").trim() : (adminId || "");
     const user = await User.create({
       name, email: email.toLowerCase(), password: hashed,
-      role: role || "student",
+      role: targetRole,
       rollNo: rollNo || "", employeeId: isAdmin ? adminIdValue : (employeeId || ""),
       adminId:    isAdmin ? adminIdValue : (adminId || ""),
       department: department || "", section: section || "",
       year: year || 1, semester: semester || 1, phone: phone || "",
       schoolId: isAdmin ? null : (schoolId || null),
-      departmentId: isAdmin ? null : (departmentId || null)
+      // Deans are school-scoped → department assignment is not applicable
+      departmentId: (isAdmin || targetRole === "dean") ? null : (departmentId || null)
     });
 
     res.status(201).json({ message: "User created ✅", userId: user._id });
