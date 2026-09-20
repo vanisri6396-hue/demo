@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { BASE_URL } from '../../config';
@@ -29,6 +29,13 @@ export default function FacultyManager() {
   });
   const [summary, setSummary] = useState({ total: 0, active: 0 });
 
+  // ── Search & filter state ─────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [filterSchoolId, setFilterSchoolId] = useState('');
+  const [filterDeptId, setFilterDeptId] = useState('');
+  const filterPanelRef = useRef(null);
+
   // Keep the profile link inside the section the user is browsing (admin vs HOD)
   const basePath = location.pathname.startsWith('/hod') ? '/hod/faculty' : '/admin/faculty';
 
@@ -36,6 +43,61 @@ export default function FacultyManager() {
   // objects first and fall back to the legacy plain-text `department` field.
   const schoolName     = (member) => member.schoolId?.name     || 'Not assigned';
   const departmentName = (member) => member.departmentId?.name || member.department || 'Not assigned';
+
+  // Populated ObjectId (or raw id) of a member's school/department
+  const schoolRef = (member) => member.schoolId?._id || member.schoolId || '';
+  const deptRef   = (member) => member.departmentId?._id || member.departmentId || '';
+
+  const selectedFilterSchool = hierarchy.find(s => s._id === filterSchoolId);
+  const filterDeptOptions = (selectedFilterSchool?.departments || [])
+    .map(d => ({ value: d._id, label: d.name }));
+
+  const activeFilterCount = (filterSchoolId ? 1 : 0) + (filterDeptId ? 1 : 0);
+  const hasActiveRefinements = activeFilterCount > 0 || searchQuery.trim() !== '';
+
+  // Search + filters are applied together, reactively on every keystroke/change
+  const filteredFaculty = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return faculty.filter(member => {
+      const matchesSearch = !q || [
+        member.name, member.email, member.employeeId,
+        member.schoolId?.name, member.departmentId?.name, member.department
+      ].some(value => (value || '').toLowerCase().includes(q));
+
+      const matchesSchool = !filterSchoolId || schoolRef(member) === filterSchoolId;
+      const matchesDept   = !filterDeptId   || deptRef(member)   === filterDeptId;
+
+      return matchesSearch && matchesSchool && matchesDept;
+    });
+  }, [faculty, searchQuery, filterSchoolId, filterDeptId]);
+
+  const clearRefinements = () => {
+    setSearchQuery('');
+    setFilterSchoolId('');
+    setFilterDeptId('');
+  };
+
+  // Close the filter panel on outside click / Escape
+  useEffect(() => {
+    if (!showFilterPanel) return;
+
+    const handleClickOutside = (e) => {
+      if (filterPanelRef.current && !filterPanelRef.current.contains(e.target)) {
+        setShowFilterPanel(false);
+      }
+    };
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setShowFilterPanel(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showFilterPanel]);
 
   const fetchData = async () => {
     try {
@@ -124,17 +186,153 @@ export default function FacultyManager() {
       </div>
 
       <div className="glass-card bg-white border-gray-100 overflow-hidden shadow-2xl min-h-[400px]">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center gap-4">
           <div className="relative flex items-center">
             <Search size={18} className="absolute left-4 text-gray-400" />
             <input 
               type="text" 
               placeholder="Search faculty name..." 
-              className="pl-12 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary-500 w-80 outline-none font-medium"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 pr-10 py-3 bg-gray-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary-500 w-80 outline-none font-medium"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+                className="absolute right-3 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircle size={18} />
+              </button>
+            )}
           </div>
-          <button className="p-3 bg-gray-50 rounded-xl text-gray-500 hover:bg-gray-100"><Filter size={20} /></button>
+
+          {/* Filter button + options panel */}
+          <div className="relative" ref={filterPanelRef}>
+            <button
+              onClick={() => setShowFilterPanel(prev => !prev)}
+              className={`p-3 rounded-xl transition-colors relative ${
+                showFilterPanel || activeFilterCount > 0
+                  ? 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+                  : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              <Filter size={20} />
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary-600 text-white text-[10px] font-black flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {showFilterPanel && (
+              <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-30 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Filter Faculty</h3>
+                  <button
+                    onClick={() => setShowFilterPanel(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <XCircle size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">School</label>
+                    <select
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 text-sm appearance-none"
+                      value={filterSchoolId}
+                      onChange={(e) => {
+                        setFilterSchoolId(e.target.value);
+                        // Cascade: a department belongs to a single school
+                        setFilterDeptId('');
+                      }}
+                    >
+                      <option value="">All Schools</option>
+                      {hierarchy.map(school => (
+                        <option key={school._id} value={school._id}>{school.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Department</label>
+                    <select
+                      disabled={!filterSchoolId}
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold text-gray-900 text-sm appearance-none disabled:opacity-50"
+                      value={filterDeptId}
+                      onChange={(e) => setFilterDeptId(e.target.value)}
+                    >
+                      <option value="">All Departments</option>
+                      {filterDeptOptions.map(dept => (
+                        <option key={dept.value} value={dept.value}>{dept.label}</option>
+                      ))}
+                    </select>
+                    {!filterSchoolId && (
+                      <p className="text-[9px] text-gray-400 font-bold italic px-1">Select a School first to filter by Department.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 mt-6 pt-5 border-t border-gray-50">
+                  <button
+                    onClick={() => { setFilterSchoolId(''); setFilterDeptId(''); }}
+                    disabled={activeFilterCount === 0}
+                    className="text-xs font-black uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-40"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => setShowFilterPanel(false)}
+                    className="btn-primary px-6 py-2.5 text-xs uppercase tracking-widest"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Active refinements + result count */}
+        {hasActiveRefinements && (
+          <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex flex-wrap items-center gap-3">
+            {searchQuery.trim() && (
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                Search: “{searchQuery.trim()}”
+                <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-700">
+                  <XCircle size={14} />
+                </button>
+              </span>
+            )}
+            {filterSchoolId && (
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                School: {selectedFilterSchool?.name || 'Selected'}
+                <button onClick={() => { setFilterSchoolId(''); setFilterDeptId(''); }} className="text-gray-400 hover:text-gray-700">
+                  <XCircle size={14} />
+                </button>
+              </span>
+            )}
+            {filterDeptId && (
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                Dept: {filterDeptOptions.find(d => d.value === filterDeptId)?.label || 'Selected'}
+                <button onClick={() => setFilterDeptId('')} className="text-gray-400 hover:text-gray-700">
+                  <XCircle size={14} />
+                </button>
+              </span>
+            )}
+            <button
+              onClick={clearRefinements}
+              className="text-[10px] font-black uppercase tracking-widest text-primary-600 hover:text-primary-700"
+            >
+              Clear all
+            </button>
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 md:ml-auto">
+              Showing {filteredFaculty.length} of {faculty.length} faculty
+            </span>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           {loading ? (
@@ -142,7 +340,7 @@ export default function FacultyManager() {
               <Loader2 className="animate-spin text-primary-500" size={50} />
               <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Loading Faculty...</p>
             </div>
-          ) : faculty.length > 0 ? (
+          ) : filteredFaculty.length > 0 ? (
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50/50 text-left border-b border-gray-100">
@@ -155,7 +353,7 @@ export default function FacultyManager() {
                 </tr>
               </thead>
               <tbody>
-                {faculty.map(member => (
+                {filteredFaculty.map(member => (
                   <tr key={member._id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/30 transition-colors">
                     <td className="p-6">
                       <div className="flex items-center gap-4">
@@ -197,6 +395,16 @@ export default function FacultyManager() {
                 ))}
               </tbody>
             </table>
+          ) : faculty.length > 0 ? (
+            <div className="p-32 text-center">
+              <p className="text-gray-500 font-bold italic">No faculty match your search or filters.</p>
+              <button
+                onClick={clearRefinements}
+                className="mt-4 text-[10px] font-black uppercase tracking-widest text-primary-600 hover:text-primary-700"
+              >
+                Clear search &amp; filters
+              </button>
+            </div>
           ) : (
             <div className="p-32 text-center text-gray-500 italic">No faculty found.</div>
           )}
